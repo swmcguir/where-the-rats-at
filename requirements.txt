@@ -1,0 +1,23 @@
+# Where the Rats At? - Chicago Rat Response Tracker
+# Dependencies for Streamlit Cloud deployment
+
+# Web framework
+streamlit>=1.29.0
+
+# Data processing
+pandas>=2.0.0
+numpy>=1.24.0
+
+# Chicago Data Portal API
+sodapy>=2.2.0
+
+# Visualization
+plotly>=5.18.0
+folium>=0.15.0
+streamlit-folium>=0.15.0
+
+# Geographic data
+geopandas>=0.14.0
+
+# HTTP requests
+requests>=2.31.0
