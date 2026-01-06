@@ -93,8 +93,13 @@ def get_base_styles() -> str:
         color: var(--accent) !important;
     }
 
-    /* Force sidebar nav labels to always be visible */
+    /* Force sidebar nav labels to always be visible with light text */
+    [data-testid="stSidebarNav"] {
+        color: #fafafa !important;
+    }
+
     [data-testid="stSidebarNav"] span {
+        color: #fafafa !important;
         opacity: 1 !important;
         visibility: visible !important;
     }
@@ -104,8 +109,35 @@ def get_base_styles() -> str:
         opacity: 1 !important;
     }
 
+    [data-testid="stSidebarNav"] a span {
+        color: #fafafa !important;
+    }
+
     [data-testid="stSidebarNav"] li {
+        color: #fafafa !important;
         opacity: 1 !important;
+    }
+
+    [data-testid="stSidebarNav"] li span {
+        color: #fafafa !important;
+    }
+
+    /* Target the actual nav link text */
+    [data-testid="stSidebarNavItems"] span {
+        color: #fafafa !important;
+    }
+
+    [data-testid="stSidebarNavLink"] span {
+        color: #fafafa !important;
+    }
+
+    /* Catch-all for any sidebar text */
+    [data-testid="stSidebar"] * {
+        color: #fafafa !important;
+    }
+
+    [data-testid="stSidebar"] span {
+        color: #fafafa !important;
     }
 
     /* ===== HERO SECTION ===== */
