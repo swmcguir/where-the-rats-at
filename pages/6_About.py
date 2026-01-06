@@ -1,6 +1,7 @@
 """About page - Grading methodology and data sources."""
 
 import streamlit as st
+from utils.styles import get_base_styles, render_page_header, render_footer, get_grade_color
 
 st.set_page_config(
     page_title="About | Where the Rats At?",
@@ -9,105 +10,16 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Single font (Space Mono) + Retro styling
-st.markdown("""
-<style>
-    @import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&display=swap');
+st.markdown(get_base_styles(), unsafe_allow_html=True)
+st.markdown('<style>.main .block-container { max-width: 900px; }</style>', unsafe_allow_html=True)
 
-    html, body, [class*="css"] {
-        font-family: 'Space Mono', monospace !important;
-        background-color: #f5f5f5;
-    }
+st.markdown(render_page_header(
+    title="About This Project",
+    subtitle="How we grade Chicago's response to rat complaints"
+), unsafe_allow_html=True)
 
-    footer {visibility: hidden;}
-
-    .main .block-container {
-        max-width: 900px;
-        padding: 1rem 1rem 2rem 1rem;
-    }
-
-    /* Sidebar styling */
-    [data-testid="stSidebar"] {
-        background: #000;
-    }
-
-    [data-testid="stSidebar"] .stMarkdown {
-        color: #fff;
-    }
-
-    [data-testid="stSidebar"] a {
-        color: #fff !important;
-        text-decoration: none;
-    }
-
-    .page-header {
-        text-align: center;
-        padding: 30px 20px;
-        margin-bottom: 20px;
-    }
-
-    .page-title {
-        font-size: 2.5rem;
-        font-weight: 700;
-        color: #000;
-        margin: 0;
-    }
-
-    .page-subtitle {
-        font-size: 1rem;
-        color: #666;
-        margin: 10px 0 0 0;
-    }
-
-    .retro-card {
-        background: #fff;
-        border: 3px solid #000;
-        margin: 20px 0;
-    }
-
-    .retro-card-header {
-        background: #000;
-        color: #fff;
-        padding: 12px 16px;
-        font-size: 0.9rem;
-        font-weight: 700;
-        text-transform: uppercase;
-    }
-
-    .retro-card-body {
-        padding: 24px;
-        background: #fff;
-    }
-
-    .site-footer {
-        text-align: center;
-        padding: 30px 20px;
-        color: #666;
-        font-size: 0.75rem;
-        border-top: 2px solid #000;
-        margin-top: 40px;
-    }
-
-    .site-footer a {
-        color: #000;
-    }
-</style>
-""", unsafe_allow_html=True)
-
-# Page Header
-st.markdown("""
-<div class="page-header">
-    <h1 class="page-title">About This Project</h1>
-    <p class="page-subtitle" style="text-align: center;">How we grade Chicago's response to rat complaints</p>
-</div>
-""", unsafe_allow_html=True)
-
-# Grading Methodology
-st.markdown("""
-<div class="retro-card">
-    <div class="retro-card-header">How Grades Are Calculated</div>
-    <div class="retro-card-body">
-""", unsafe_allow_html=True)
+# === GRADING METHODOLOGY ===
+st.markdown('<p style="font-size:0.875rem;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;margin:1.5rem 0 0.75rem 0;background:#0a0a0a;color:#fafafa;padding:0.875rem 1.25rem;">How Grades Are Calculated</p>', unsafe_allow_html=True)
 
 st.markdown("""
 Each of Chicago's 50 wards is scored on **5 factors** using percentile-based ranking.
@@ -117,20 +29,20 @@ with all others spread evenly between.
 
 st.markdown("### The Five Factors")
 
-factors_data = {
-    "Factor": ["Speed", "Workload", "Worst Case", "Consistency", "Completion"],
-    "Weight": ["30%", "25%", "20%", "15%", "10%"],
-    "What It Measures": [
-        "Median response time - how fast are complaints resolved?",
-        "Volume of complaints handled - credit for high-volume wards",
-        "90th percentile response - are some complaints left waiting weeks?",
-        "Standard deviation - is service reliable or a lottery?",
-        "Completion rate - are complaints actually getting resolved?"
-    ]
-}
+factors = [
+    ('Speed', '30%', 'Median response time - how fast are complaints resolved?', '#10b981'),
+    ('Workload', '25%', 'Volume of complaints handled - credit for high-volume wards', '#84cc16'),
+    ('Worst Case', '20%', '90th percentile response - are some complaints left waiting weeks?', '#f59e0b'),
+    ('Consistency', '15%', 'Standard deviation - is service reliable or a lottery?', '#f97316'),
+    ('Completion', '10%', 'Completion rate - are complaints actually getting resolved?', '#ef4444'),
+]
 
-import pandas as pd
-st.table(pd.DataFrame(factors_data))
+factors_items = ""
+for name, weight, desc, color in factors:
+    weight_num = int(weight.replace('%', ''))
+    factors_items += f'<div style="display:flex;align-items:center;gap:1rem;padding:0.75rem;background:#fafafa;border-radius:4px;"><div style="min-width:100px;"><span style="font-weight:700;">{name}</span><span style="color:#525252;font-size:0.875rem;"> ({weight})</span></div><div style="flex:1;background:#e5e5e5;height:8px;border-radius:4px;overflow:hidden;"><div style="width:{weight_num * 3}%;background:{color};height:100%;"></div></div><div style="flex:2;font-size:0.875rem;color:#525252;">{desc}</div></div>'
+
+st.markdown(f'<div style="display:flex;flex-direction:column;gap:0.75rem;margin:1.5rem 0;">{factors_items}</div>', unsafe_allow_html=True)
 
 st.markdown("### Why These Weights?")
 
@@ -142,28 +54,23 @@ st.markdown("""
 - **Completion (10%)**: De-emphasized because most wards complete 95%+ of complaints
 """)
 
-st.markdown("</div></div>", unsafe_allow_html=True)
+# === GRADE THRESHOLDS ===
+st.markdown('<p style="font-size:0.875rem;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;margin:1.5rem 0 0.75rem 0;background:#0a0a0a;color:#fafafa;padding:0.875rem 1.25rem;">Grade Thresholds</p>', unsafe_allow_html=True)
 
-# Grade Thresholds
-st.markdown("""
-<div class="retro-card">
-    <div class="retro-card-header">Grade Thresholds</div>
-    <div class="retro-card-body">
-""", unsafe_allow_html=True)
+grades = [
+    ('A', '80-100', 'Excellent - top performers across all metrics'),
+    ('B', '65-79', 'Good - above average performance'),
+    ('C', '50-64', 'Average - room for improvement'),
+    ('D', '35-49', 'Below Average - significant issues need attention'),
+    ('F', '0-34', 'Poor - needs immediate improvement'),
+]
 
-grades_data = {
-    "Grade": ["A", "B", "C", "D", "F"],
-    "Score Range": ["80-100", "65-79", "50-64", "35-49", "0-34"],
-    "Meaning": [
-        "Excellent - top performers across all metrics",
-        "Good - above average performance",
-        "Average - room for improvement",
-        "Below Average - significant issues need attention",
-        "Poor - needs immediate improvement"
-    ]
-}
+grades_items = ""
+for grade, score_range, meaning in grades:
+    color = get_grade_color(grade)
+    grades_items += f'<div style="display:flex;align-items:center;gap:1rem;padding:0.5rem;"><div style="width:2.5rem;height:2.5rem;background:{color};color:white;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:1.25rem;border-radius:4px;">{grade}</div><div style="min-width:80px;font-weight:600;">{score_range}</div><div style="color:#525252;">{meaning}</div></div>'
 
-st.table(pd.DataFrame(grades_data))
+st.markdown(f'<div style="display:flex;flex-direction:column;gap:0.5rem;margin:1rem 0;">{grades_items}</div>', unsafe_allow_html=True)
 
 st.markdown("""
 **Final Score Formula:**
@@ -173,14 +80,8 @@ Final Score = (Speed × 0.30) + (Workload × 0.25) + (Worst Case × 0.20)
 ```
 """)
 
-st.markdown("</div></div>", unsafe_allow_html=True)
-
-# Why This Approach
-st.markdown("""
-<div class="retro-card">
-    <div class="retro-card-header">Why This Approach?</div>
-    <div class="retro-card-body">
-""", unsafe_allow_html=True)
+# === WHY THIS APPROACH ===
+st.markdown('<p style="font-size:0.875rem;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;margin:1.5rem 0 0.75rem 0;background:#0a0a0a;color:#fafafa;padding:0.875rem 1.25rem;">Why This Approach?</p>', unsafe_allow_html=True)
 
 st.markdown("""
 ### The Problem with Simple Rankings
@@ -203,14 +104,8 @@ By combining 5 metrics with appropriate weights, we create a more holistic pictu
 - **Stays grounded**: Percentile-based scoring adapts to actual data distributions
 """)
 
-st.markdown("</div></div>", unsafe_allow_html=True)
-
-# Data Source
-st.markdown("""
-<div class="retro-card">
-    <div class="retro-card-header">Data Source</div>
-    <div class="retro-card-body">
-""", unsafe_allow_html=True)
+# === DATA SOURCE ===
+st.markdown('<p style="font-size:0.875rem;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;margin:1.5rem 0 0.75rem 0;background:#0a0a0a;color:#fafafa;padding:0.875rem 1.25rem;">Data Source</p>', unsafe_allow_html=True)
 
 st.markdown("""
 All data comes from the **Chicago Data Portal**, the city's official open data platform.
@@ -230,14 +125,8 @@ All data comes from the **Chicago Data Portal**, the city's official open data p
 - Response time = Days from complaint creation to closure
 """)
 
-st.markdown("</div></div>", unsafe_allow_html=True)
-
-# Credits
-st.markdown("""
-<div class="retro-card">
-    <div class="retro-card-header">Credits</div>
-    <div class="retro-card-body">
-""", unsafe_allow_html=True)
+# === CREDITS ===
+st.markdown('<p style="font-size:0.875rem;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;margin:1.5rem 0 0.75rem 0;background:#0a0a0a;color:#fafafa;padding:0.875rem 1.25rem;">Credits</p>', unsafe_allow_html=True)
 
 st.markdown("""
 **Created by:** [Sean W. McGuire](https://www.linkedin.com/in/seanwmcguire/)
@@ -253,12 +142,4 @@ st.markdown("""
 City of Chicago tracks a lot of data about rats. Enough data that it felt irresponsible not to turn it into a live scorecard and competition. This dashboard seeks to track performance ward by ward, so maybe one day we'll have a slightly less ratty future.
 """)
 
-st.markdown("</div></div>", unsafe_allow_html=True)
-
-# Footer
-st.markdown("""
-<div class="site-footer">
-    <p>Data from <a href="https://data.cityofchicago.org">Chicago Data Portal</a></p>
-    <p style="margin-top: 15px;">&copy; 2025 <a href="https://www.linkedin.com/in/seanwmcguire/">Sean W. McGuire</a>. All rights reserved.</p>
-</div>
-""", unsafe_allow_html=True)
+st.markdown(render_footer(), unsafe_allow_html=True)

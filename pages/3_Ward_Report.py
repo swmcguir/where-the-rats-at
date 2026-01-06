@@ -5,6 +5,7 @@ import pandas as pd
 from urllib.parse import quote
 from data.fetch import fetch_rodent_complaints, fetch_aldermen
 from utils.metrics import calculate_ward_metrics, calculate_ward_grades, get_city_summary
+from utils.styles import get_base_styles, render_page_header, render_footer, get_grade_color
 
 st.set_page_config(
     page_title="Ward Report Card | Where the Rats At?",
@@ -13,156 +14,13 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Single font (Space Mono) + Retro styling
-st.markdown("""
-<style>
-    @import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&display=swap');
+st.markdown(get_base_styles(), unsafe_allow_html=True)
 
-    html, body, [class*="css"] {
-        font-family: 'Space Mono', monospace !important;
-        background-color: #f5f5f5;
-    }
+st.markdown(render_page_header(
+    title="Ward Report Card",
+    subtitle="Get a shareable grade for any Chicago ward"
+), unsafe_allow_html=True)
 
-    footer {visibility: hidden;}
-
-    .main .block-container {
-        max-width: 1000px;
-        padding: 1rem 1rem 2rem 1rem;
-    }
-
-    /* Sidebar styling */
-    [data-testid="stSidebar"] {
-        background: #000;
-    }
-
-    [data-testid="stSidebar"] .stMarkdown {
-        color: #fff;
-    }
-
-    [data-testid="stSidebar"] a {
-        color: #fff !important;
-        text-decoration: none;
-    }
-
-    .page-header {
-        text-align: center;
-        padding: 30px 20px;
-        margin-bottom: 20px;
-    }
-
-    .page-title {
-        font-size: 2.5rem;
-        font-weight: 700;
-        color: #000;
-        margin: 0;
-    }
-
-    .page-subtitle {
-        font-size: 1rem;
-        color: #666;
-        margin: 10px 0 0 0;
-    }
-
-    .retro-card {
-        background: #fff;
-        border: 3px solid #000;
-        margin: 20px 0;
-    }
-
-    .retro-card-header {
-        background: #000;
-        color: #fff;
-        padding: 12px 16px;
-        font-size: 0.9rem;
-        font-weight: 700;
-        text-transform: uppercase;
-    }
-
-    .retro-card-body {
-        padding: 24px;
-        background: #fff;
-    }
-
-    .grade-display {
-        text-align: center;
-        padding: 40px;
-    }
-
-    .grade-letter {
-        font-size: 10rem;
-        font-weight: 700;
-        line-height: 1;
-        margin: 0;
-    }
-
-    .grade-ward {
-        font-size: 1.5rem;
-        color: #000;
-        margin: 20px 0 10px 0;
-    }
-
-    .grade-desc {
-        font-size: 1rem;
-        color: #666;
-        margin: 0;
-    }
-
-    .low-sample {
-        color: #f97316;
-        font-size: 0.9rem;
-        margin-top: 15px;
-    }
-
-    .stat-box {
-        text-align: center;
-        padding: 15px;
-        background: #fff;
-    }
-
-    .stat-value {
-        font-size: 2rem;
-        font-weight: 700;
-        color: #000;
-        margin: 0;
-        background: #fff;
-    }
-
-    .stat-label {
-        font-size: 0.75rem;
-        color: #666;
-        margin-top: 5px;
-        text-transform: uppercase;
-        background: #fff;
-    }
-
-    .site-footer {
-        text-align: center;
-        padding: 30px 20px;
-        color: #666;
-        font-size: 0.75rem;
-        border-top: 2px solid #000;
-        margin-top: 40px;
-    }
-
-    .site-footer a {
-        color: #000;
-    }
-
-    div[data-testid="stDataFrame"] {
-        border: 2px solid #000 !important;
-    }
-</style>
-""", unsafe_allow_html=True)
-
-# Page Header
-st.markdown("""
-<div class="page-header">
-    <h1 class="page-title">Ward Report Card</h1>
-    <p class="page-subtitle">Get a shareable grade for any Chicago ward</p>
-</div>
-""", unsafe_allow_html=True)
-
-# Load data
 with st.spinner("Loading data..."):
     df = fetch_rodent_complaints(days_back=365)
     aldermen = fetch_aldermen()
@@ -171,168 +29,83 @@ if df.empty:
     st.error("No data available.")
     st.stop()
 
-# Calculate metrics
 ward_metrics = calculate_ward_metrics(df)
 ward_metrics = calculate_ward_grades(ward_metrics)
 city_summary = get_city_summary(df)
 
-ward_metrics = ward_metrics.merge(
-    aldermen[['ward', 'alderman', 'ward_phone', 'website']],
-    on='ward',
-    how='left'
-)
+ward_metrics = ward_metrics.merge(aldermen[['ward', 'alderman', 'ward_phone', 'website']], on='ward', how='left')
 
-# Ward selector
 available_wards = sorted(ward_metrics['ward'].dropna().astype(int).unique())
 
-selected_ward = st.selectbox(
-    "Select Your Ward",
-    options=available_wards,
-    index=0
-)
+selected_ward = st.selectbox("Select Your Ward", options=available_wards, index=0)
 
 ward_data = ward_metrics[ward_metrics['ward'] == selected_ward].iloc[0]
 
-# Grade colors
-grade_colors = {
-    'A': ('#22c55e', 'Excellent'),
-    'B': ('#84cc16', 'Good'),
-    'C': ('#eab308', 'Average'),
-    'D': ('#f97316', 'Below Average'),
-    'F': ('#ef4444', 'Poor')
-}
+grade_info = {'A': ('Excellent', 'Top performers across all metrics'), 'B': ('Good', 'Above average performance'), 'C': ('Average', 'Room for improvement'), 'D': ('Below Average', 'Significant issues need attention'), 'F': ('Poor', 'Needs immediate improvement')}
 
-color, description = grade_colors[ward_data['grade']]
+grade = ward_data['grade']
+color = get_grade_color(grade)
+glow = get_grade_color(grade, 'glow')
+description, detail = grade_info[grade]
+low_sample_warning = f'<p style="color:#f97316;font-size:0.875rem;margin-top:1rem;">Low sample size ({int(ward_data["total_complaints"])} complaints)</p>' if ward_data.get('low_sample_size', False) else ""
 
-# Grade display - using native Streamlit components
-st.subheader("Grade Report")
+# Grade card - single compact block
+st.markdown(f'<div class="card" style="max-width:600px;margin:0 auto 2rem auto;"><div class="card-header" style="text-align:center;">Ward {selected_ward} Report Card</div><div class="card-body" style="text-align:center;padding:3rem 2rem;"><div style="width:140px;height:140px;background:{color};color:white;font-family:Space Grotesk,sans-serif;font-size:6rem;font-weight:700;display:flex;align-items:center;justify-content:center;margin:0 auto;border-radius:12px;box-shadow:0 10px 40px {glow};">{grade}</div><h2 style="font-family:Space Grotesk,sans-serif;font-size:1.75rem;margin:1.5rem 0 0.5rem 0;">{description}</h2><p style="color:#525252;margin:0;">{detail}</p>{low_sample_warning}</div></div>', unsafe_allow_html=True)
 
-# Large grade letter with color
-st.markdown(f'<h1 style="text-align: center; font-size: 8rem; color: {color}; margin: 0; line-height: 1;">{ward_data["grade"]}</h1>', unsafe_allow_html=True)
-st.markdown(f'<p style="text-align: center; font-size: 1.5rem; margin: 10px 0;">Ward {selected_ward}</p>', unsafe_allow_html=True)
-st.markdown(f'<p style="text-align: center; color: #666;">{description}</p>', unsafe_allow_html=True)
-
-if ward_data.get('low_sample_size', False):
-    st.warning(f"Low sample size ({int(ward_data['total_complaints'])} complaints)")
-
-# Alderman info
 if pd.notna(ward_data.get('alderman')):
-    st.markdown(f"**Alderman:** {ward_data['alderman']}")
+    st.markdown(f'<p style="text-align:center;font-size:1rem;margin-bottom:2rem;"><strong>Alderman:</strong> {ward_data["alderman"]}</p>', unsafe_allow_html=True)
 
-# Performance Metrics
-st.subheader("Performance Metrics")
-
-col1, col2, col3, col4 = st.columns(4)
-
-# vs_city_median is (ward - city) / city * 100, so negative = faster than city
+# Performance metrics
 vs_city_pct = ward_data['vs_city_median']
-# Format with sign: negative (faster) = green down arrow, positive (slower) = red up arrow
-if vs_city_pct <= 0:
-    delta_text = f"{vs_city_pct:.0f}% (faster)"
-else:
-    delta_text = f"+{vs_city_pct:.0f}% (slower)"
-with col1:
-    # delta_color="inverse": negative=green (good for response time), positive=red (bad)
-    st.metric("Median Response (Days)", f"{ward_data['median_response']:.1f}", delta_text, delta_color="inverse")
+delta_text = f"{vs_city_pct:.0f}%" if vs_city_pct <= 0 else f"+{vs_city_pct:.0f}%"
+delta_class = "positive" if vs_city_pct <= 0 else "negative"
+rank = int(ward_data['rank'])
+rank_color = "#10b981" if rank <= 10 else ("#f59e0b" if rank <= 30 else "#ef4444")
 
-with col2:
-    st.metric("City Ranking (of 50)", f"#{int(ward_data['rank'])}")
-    # Add colored label for rank context
-    if ward_data['rank'] <= 10:
-        st.markdown('<span style="color: #22c55e; font-size: 0.875rem;">faster</span>', unsafe_allow_html=True)
-    elif ward_data['rank'] >= 40:
-        st.markdown('<span style="color: #ef4444; font-size: 0.875rem;">slower</span>', unsafe_allow_html=True)
+st.markdown(f'<div class="card"><div class="card-header">Performance Metrics</div><div class="card-body"><div style="display:grid;grid-template-columns:repeat(4,1fr);gap:1rem;"><div class="stat-box"><p class="stat-value">{ward_data["median_response"]:.1f}</p><p class="stat-label">Median Response (Days)</p><p class="stat-delta {delta_class}">{delta_text} vs city</p></div><div class="stat-box"><p class="stat-value">#{rank}</p><p class="stat-label">City Ranking</p><p style="font-size:0.75rem;color:{rank_color};margin-top:0.25rem;">of 50 wards</p></div><div class="stat-box"><p class="stat-value">{int(ward_data["total_complaints"]):,}</p><p class="stat-label">Total Complaints</p></div><div class="stat-box"><p class="stat-value">{ward_data["completion_rate"]:.1f}%</p><p class="stat-label">Completion Rate</p></div></div></div></div>', unsafe_allow_html=True)
 
-with col3:
-    st.metric("Total Complaints", f"{int(ward_data['total_complaints']):,}")
+# Factor breakdown
+factors = [('Speed', ward_data.get('speed_score', 0), '30%'), ('Workload', ward_data.get('volume_score', 0), '25%'), ('Worst Case', ward_data.get('p90_score', 0), '20%'), ('Consistency', ward_data.get('consistency_score', 0), '15%'), ('Completion', ward_data.get('completion_score', 0), '10%')]
 
-with col4:
-    st.metric("Completion Rate", f"{ward_data['completion_rate']:.1f}%")
+factor_items = ""
+for name, score, weight in factors:
+    score_color = "#10b981" if score >= 70 else ("#f59e0b" if score >= 40 else "#ef4444")
+    factor_items += f'<div style="text-align:center;padding:1rem;background:#fafafa;border-radius:4px;"><p style="font-size:2rem;font-weight:700;margin:0;color:{score_color};">{score:.0f}</p><p style="font-size:0.875rem;font-weight:600;margin:0.5rem 0 0.25rem 0;">{name}</p><p style="font-size:0.6875rem;color:#a3a3a3;margin:0;">{weight}</p></div>'
+
+final_score = ward_data.get('final_score', 0)
+
+st.markdown(f'<div class="card"><div class="card-header">Grade Factor Breakdown</div><div class="card-body"><div style="display:grid;grid-template-columns:repeat(5,1fr);gap:1rem;">{factor_items}</div><div style="margin-top:1.5rem;"><div style="display:flex;justify-content:space-between;font-size:0.875rem;margin-bottom:0.5rem;"><span>Final Score</span><span style="font-weight:700;">{final_score:.1f}/100</span></div><div style="background:#e5e5e5;height:12px;border-radius:6px;overflow:hidden;"><div style="background:{color};height:100%;width:{final_score}%;"></div></div></div></div></div>', unsafe_allow_html=True)
 
 # Comparison table
-st.subheader("Compared to City Average")
+resp_diff = ward_data['median_response'] - city_summary['median_response_days']
+resp_color = "#10b981" if resp_diff <= 0 else "#ef4444"
+comp_diff = ward_data['completion_rate'] - city_summary['completion_rate']
+comp_color = "#10b981" if comp_diff >= 0 else "#ef4444"
 
-comparison_data = pd.DataFrame({
-    'Metric': ['Response Time (days)', 'Completion Rate (%)'],
-    f'Ward {selected_ward}': [round(ward_data['median_response'], 1), round(ward_data['completion_rate'], 1)],
-    'City Average': [city_summary['median_response_days'], city_summary['completion_rate']]
-})
-
-st.dataframe(comparison_data, hide_index=True, use_container_width=True)
-
-# Factor Breakdown
-st.subheader("Grade Factor Breakdown")
-
-st.caption("Your ward is scored on 5 factors:")
-
-factor_col1, factor_col2, factor_col3, factor_col4, factor_col5 = st.columns(5)
-
-with factor_col1:
-    speed = ward_data.get('speed_score', 0)
-    st.metric("Speed", f"{speed:.0f}/100", help="Median response time (30% weight)")
-
-with factor_col2:
-    volume = ward_data.get('volume_score', 0)
-    st.metric("Workload", f"{volume:.0f}/100", help="Complaint volume handled (25% weight)")
-
-with factor_col3:
-    p90 = ward_data.get('p90_score', 0)
-    st.metric("Worst Case", f"{p90:.0f}/100", help="90th percentile response (20% weight)")
-
-with factor_col4:
-    consistency = ward_data.get('consistency_score', 0)
-    st.metric("Consistency", f"{consistency:.0f}/100", help="Low variance = reliable (15% weight)")
-
-with factor_col5:
-    completion = ward_data.get('completion_score', 0)
-    st.metric("Completion", f"{completion:.0f}/100", help="Completion rate (10% weight)")
-
-# Show final score
-st.progress(ward_data.get('final_score', 0) / 100)
-st.caption(f"**Final Score: {ward_data.get('final_score', 0):.1f}/100**")
+st.markdown(f'<div class="card"><div class="card-header">Compared to City Average</div><div class="card-body"><table style="width:100%;border-collapse:collapse;font-size:0.9375rem;"><tr style="border-bottom:2px solid #171717;"><th style="text-align:left;padding:0.75rem;">Metric</th><th style="text-align:right;padding:0.75rem;">Ward {selected_ward}</th><th style="text-align:right;padding:0.75rem;">City Average</th><th style="text-align:right;padding:0.75rem;">Difference</th></tr><tr style="border-bottom:1px solid #e5e5e5;"><td style="padding:0.75rem;">Response Time (days)</td><td style="text-align:right;padding:0.75rem;font-weight:600;">{ward_data["median_response"]:.1f}</td><td style="text-align:right;padding:0.75rem;">{city_summary["median_response_days"]}</td><td style="text-align:right;padding:0.75rem;color:{resp_color};">{"+" if resp_diff > 0 else ""}{resp_diff:.1f}</td></tr><tr><td style="padding:0.75rem;">Completion Rate (%)</td><td style="text-align:right;padding:0.75rem;font-weight:600;">{ward_data["completion_rate"]:.1f}%</td><td style="text-align:right;padding:0.75rem;">{city_summary["completion_rate"]}%</td><td style="text-align:right;padding:0.75rem;color:{comp_color};">{"+" if comp_diff >= 0 else ""}{comp_diff:.1f}%</td></tr></table></div></div>', unsafe_allow_html=True)
 
 # Share section
-st.subheader("Share This Report Card")
-
 share_text = f"Ward {selected_ward} gets a {ward_data['grade']} for rat response time! Median: {ward_data['median_response']:.1f} days. Rank: #{int(ward_data['rank'])} of 50 wards."
-
 if pd.notna(ward_data.get('alderman')):
     share_text += f" Alderman: {ward_data['alderman']}"
-
 share_text += " #WhereTheRatsAt #Chicago311"
 
+st.markdown('<p style="font-size:0.875rem;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;margin:1.5rem 0 0.75rem 0;background:#0a0a0a;color:#fafafa;padding:0.875rem 1.25rem;">Share This Report Card</p>', unsafe_allow_html=True)
 st.code(share_text, language=None)
 
-twitter_url = f"https://twitter.com/intent/tweet?text={quote(share_text, safe='')}"
-st.link_button("Share on X", twitter_url)
+col_share1, col_share2 = st.columns(2)
+with col_share1:
+    st.link_button("Share on X", f"https://twitter.com/intent/tweet?text={quote(share_text, safe='')}", use_container_width=True)
+with col_share2:
+    st.link_button("Share on LinkedIn", "https://www.linkedin.com/sharing/share-offsite/?url=https://chicago-rats.streamlit.app", use_container_width=True)
 
 # Contact info
 if pd.notna(ward_data.get('alderman')):
-    st.subheader("Contact Your Alderman")
+    phone_html = f'<p style="margin:0.5rem 0;"><strong>Phone:</strong> {ward_data["ward_phone"]}</p>' if pd.notna(ward_data.get('ward_phone')) else ""
+    st.markdown(f'<div class="card"><div class="card-header">Contact Your Alderman</div><div class="card-body"><p style="font-size:1.125rem;font-weight:600;margin:0 0 1rem 0;">{ward_data["alderman"]}</p>{phone_html}</div></div>', unsafe_allow_html=True)
+    if pd.notna(ward_data.get('website')) and str(ward_data['website']).lower() != 'nan':
+        st.link_button("Visit Ward Website", str(ward_data['website']))
 
-    col1, col2 = st.columns(2)
+st.caption("**How grades are calculated:** Multi-factor scoring: Speed (30%), Workload (25%), Worst-Case (20%), Consistency (15%), Completion (10%). A=80+, B=65-79, C=50-64, D=35-49, F=<35.")
 
-    with col1:
-        if pd.notna(ward_data.get('ward_phone')):
-            st.markdown(f"**Phone:** {ward_data['ward_phone']}")
-
-    with col2:
-        if pd.notna(ward_data.get('website')):
-            website_url = str(ward_data['website'])
-            if website_url and website_url.lower() != 'nan':
-                st.link_button("Ward Website", website_url)
-
-# Methodology
-st.caption("""
-**How grades are calculated:** Multi-factor scoring across 5 dimensions:
-Speed (30%), Workload (25%), Worst-Case Response (20%), Consistency (15%), Completion (10%).
-A = 80+, B = 65-79, C = 50-64, D = 35-49, F = <35. Data from Chicago 311 (last 12 months).
-""")
-
-# Footer
-st.markdown("""
-<div class="site-footer">
-    <p>Data from <a href="https://data.cityofchicago.org">Chicago Data Portal</a> / Updated daily</p>
-    <p style="margin-top: 15px;">© 2025 <a href="https://www.linkedin.com/in/seanwmcguire/">Sean W. McGuire</a>. All rights reserved.</p>
-</div>
-""", unsafe_allow_html=True)
+st.markdown(render_footer(), unsafe_allow_html=True)

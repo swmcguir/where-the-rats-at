@@ -4,6 +4,7 @@ import streamlit as st
 import pandas as pd
 import plotly.express as px
 from data.fetch import fetch_rodent_complaints, get_dataset_metadata
+from utils.styles import get_base_styles, render_page_header, render_footer
 
 st.set_page_config(
     page_title="Problem Streets | Where the Rats At?",
@@ -12,104 +13,13 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Single font (Space Mono) + Retro styling
-st.markdown("""
-<style>
-    @import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&display=swap');
+st.markdown(get_base_styles(), unsafe_allow_html=True)
 
-    html, body, [class*="css"] {
-        font-family: 'Space Mono', monospace !important;
-        background-color: #f5f5f5;
-    }
+st.markdown(render_page_header(
+    title="Problem Streets",
+    subtitle="Which streets have the most rat complaints?"
+), unsafe_allow_html=True)
 
-    footer {visibility: hidden;}
-
-    .main .block-container {
-        max-width: 1400px;
-        padding: 1rem 1rem 2rem 1rem;
-    }
-
-    /* Sidebar styling */
-    [data-testid="stSidebar"] {
-        background: #000;
-    }
-
-    [data-testid="stSidebar"] .stMarkdown {
-        color: #fff;
-    }
-
-    [data-testid="stSidebar"] a {
-        color: #fff !important;
-        text-decoration: none;
-    }
-
-    .page-header {
-        text-align: center;
-        padding: 30px 20px;
-        margin-bottom: 20px;
-    }
-
-    .page-title {
-        font-size: 2.5rem;
-        font-weight: 700;
-        color: #000;
-        margin: 0;
-    }
-
-    .page-subtitle {
-        font-size: 1rem;
-        color: #666;
-        margin: 10px 0 0 0;
-    }
-
-    .retro-card {
-        background: #fff;
-        border: 3px solid #000;
-        margin: 20px 0;
-    }
-
-    .retro-card-header {
-        background: #000;
-        color: #fff;
-        padding: 12px 16px;
-        font-size: 0.9rem;
-        font-weight: 700;
-        text-transform: uppercase;
-    }
-
-    .retro-card-body {
-        padding: 24px;
-        background: #fff;
-    }
-
-    .site-footer {
-        text-align: center;
-        padding: 30px 20px;
-        color: #666;
-        font-size: 0.75rem;
-        border-top: 2px solid #000;
-        margin-top: 40px;
-    }
-
-    .site-footer a {
-        color: #000;
-    }
-
-    div[data-testid="stDataFrame"] {
-        border: 2px solid #000 !important;
-    }
-</style>
-""", unsafe_allow_html=True)
-
-# Page Header
-st.markdown("""
-<div class="page-header">
-    <h1 class="page-title">Problem Streets</h1>
-    <p class="page-subtitle">Which streets have the most rat complaints?</p>
-</div>
-""", unsafe_allow_html=True)
-
-# Load data
 with st.spinner("Loading complaint data..."):
     df = fetch_rodent_complaints(days_back=365)
 
@@ -117,10 +27,8 @@ if df.empty:
     st.error("No data available.")
     st.stop()
 
-# Sidebar filters
 st.sidebar.header("Filters")
 
-# Ward filter
 available_wards = sorted(df['ward'].dropna().astype(int).unique())
 selected_ward = st.sidebar.selectbox(
     "Filter by Ward",
@@ -128,7 +36,6 @@ selected_ward = st.sidebar.selectbox(
     index=0
 )
 
-# Apply ward filter
 if selected_ward != "All Wards":
     ward_num = int(selected_ward.replace("Ward ", ""))
     df_filtered = df[df['ward'] == ward_num]
@@ -137,7 +44,6 @@ else:
     df_filtered = df
     filter_label = "City-Wide"
 
-# Calculate street stats
 street_stats = df_filtered.groupby('street_name').agg(
     complaints=('sr_number', 'count'),
     avg_response=('response_days', 'mean'),
@@ -149,12 +55,8 @@ street_stats = street_stats.dropna(subset=['street_name'])
 street_stats = street_stats[street_stats['street_name'].str.strip() != '']
 street_stats = street_stats.sort_values('complaints', ascending=False)
 
-# Top 20 streets bar chart
-st.markdown(f"""
-<div class="retro-card">
-    <div class="retro-card-header">Top 20 Problem Streets / {filter_label}</div>
-    <div class="retro-card-body">
-""", unsafe_allow_html=True)
+# Top 20 chart
+st.markdown(f'<p style="font-size:0.875rem;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;margin:1rem 0 0.75rem 0;background:#0a0a0a;color:#fafafa;padding:0.875rem 1.25rem;">Top 20 Problem Streets / {filter_label}</p>', unsafe_allow_html=True)
 
 top_20 = street_stats.head(20)
 
@@ -164,33 +66,33 @@ fig = px.bar(
     y='street_name',
     orientation='h',
     color='avg_response',
-    color_continuous_scale='RdYlGn_r',  # Red = slow, Green = fast
-    labels={
-        'complaints': 'Number of Complaints',
-        'street_name': 'Street',
-        'avg_response': 'Avg Response (Days)'
-    }
+    color_continuous_scale=[[0, '#10b981'], [0.5, '#f59e0b'], [1, '#ef4444']],
+    labels={'complaints': 'Number of Complaints', 'street_name': 'Street', 'avg_response': 'Avg Response (Days)'}
 )
-
 fig.update_layout(
     height=600,
-    yaxis={'categoryorder': 'total ascending'},
+    yaxis={'categoryorder': 'total ascending', 'title': None, 'tickfont': {'family': 'Space Mono, monospace', 'size': 11}},
+    xaxis={'title': {'text': 'Number of Complaints', 'font': {'family': 'Space Grotesk, sans-serif', 'size': 12}}, 'tickfont': {'family': 'Space Mono, monospace', 'size': 11}, 'gridcolor': '#e5e5e5'},
     showlegend=False,
     font_family="Space Mono, monospace",
     paper_bgcolor='rgba(0,0,0,0)',
     plot_bgcolor='rgba(0,0,0,0)',
-    coloraxis_colorbar=dict(title="Avg Days")
+    coloraxis_colorbar=dict(title=dict(text="Avg Days", font={'family': 'Space Mono, monospace', 'size': 11}), tickfont={'family': 'Space Mono, monospace', 'size': 10}),
+    margin={'l': 20, 'r': 20, 't': 20, 'b': 40}
 )
-
 st.plotly_chart(fig, use_container_width=True)
-st.markdown('</div></div>', unsafe_allow_html=True)
 
-# Full table
-st.markdown(f"""
-<div class="retro-card">
-    <div class="retro-card-header">All Streets / {filter_label}</div>
-    <div class="retro-card-body">
-""", unsafe_allow_html=True)
+# Summary stats
+top_20_complaints = top_20['complaints'].sum()
+total_complaints = street_stats['complaints'].sum()
+pct = (top_20_complaints / total_complaints * 100) if total_complaints > 0 else 0
+worst_street = top_20.iloc[0]['street_name'] if len(top_20) > 0 else "N/A"
+worst_count = int(top_20.iloc[0]['complaints']) if len(top_20) > 0 else 0
+
+st.markdown(f'<div class="card"><div class="card-header">Summary / {filter_label}</div><div class="card-body"><div style="display:grid;grid-template-columns:repeat(3,1fr);gap:1rem;"><div class="stat-box"><p class="stat-value">{len(street_stats):,}</p><p class="stat-label">Total Streets</p></div><div class="stat-box"><p class="stat-value" style="font-size:1.25rem;">{worst_street}</p><p class="stat-label">Worst Street ({worst_count:,} complaints)</p></div><div class="stat-box"><p class="stat-value">{pct:.0f}%</p><p class="stat-label">Top 20 Streets (of all complaints)</p></div></div></div></div>', unsafe_allow_html=True)
+
+# Data table
+st.markdown(f'<p style="font-size:0.875rem;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;margin:1.5rem 0 0.75rem 0;background:#0a0a0a;color:#fafafa;padding:0.875rem 1.25rem;">All Streets / {filter_label}</p>', unsafe_allow_html=True)
 
 display_table = street_stats.head(100).copy()
 display_table.columns = ['Street', 'Complaints', 'Avg Response (Days)', 'Median Response (Days)', 'Completion %']
@@ -211,58 +113,10 @@ st.dataframe(
 )
 
 csv = display_table.to_csv(index=False)
-st.download_button(
-    label="Download CSV",
-    data=csv,
-    file_name=f"chicago_problem_streets_{filter_label.lower().replace(' ', '_')}.csv",
-    mime="text/csv"
-)
+st.download_button(label="Download CSV", data=csv, file_name=f"chicago_problem_streets_{filter_label.lower().replace(' ', '_')}.csv", mime="text/csv")
 
-st.markdown('</div></div>', unsafe_allow_html=True)
+st.caption("**Methodology:** Streets ranked by total rat complaints in the last 12 months. Color: Green = faster, Red = slower response.")
 
-# Summary stats
-st.markdown(f"""
-<div class="retro-card">
-    <div class="retro-card-header">Summary / {filter_label}</div>
-    <div class="retro-card-body">
-""", unsafe_allow_html=True)
-
-col1, col2, col3 = st.columns(3)
-
-with col1:
-    st.metric("Total Streets", f"{len(street_stats):,}")
-
-with col2:
-    if len(top_20) > 0:
-        worst_street = top_20.iloc[0]['street_name']
-        worst_count = int(top_20.iloc[0]['complaints'])
-        st.metric("Worst Street", worst_street, f"{worst_count} complaints")
-
-with col3:
-    top_20_complaints = top_20['complaints'].sum()
-    total_complaints = street_stats['complaints'].sum()
-    pct = (top_20_complaints / total_complaints * 100) if total_complaints > 0 else 0
-    st.metric("Top 20 Streets", f"{pct:.0f}% of complaints")
-
-st.markdown('</div></div>', unsafe_allow_html=True)
-
-# Methodology
-st.caption("""
-**Methodology:** Streets are ranked by total rat complaints in the last 12 months.
-Response time is the average days from complaint creation to closure.
-Color coding: Red = slower response, Green = faster response.
-""")
-
-# Footer with data freshness
 metadata = get_dataset_metadata()
-if metadata['last_updated']:
-    update_text = f"Last updated: {metadata['last_updated'].strftime('%b %d, %Y at %I:%M %p')}"
-else:
-    update_text = "Updated daily"
-
-st.markdown(f"""
-<div class="site-footer">
-    <p>Data from <a href="https://data.cityofchicago.org">Chicago Data Portal</a> / {update_text}</p>
-    <p style="margin-top: 15px;">© 2025 <a href="https://www.linkedin.com/in/seanwmcguire/">Sean W. McGuire</a>. All rights reserved.</p>
-</div>
-""", unsafe_allow_html=True)
+update_text = metadata['last_updated'].strftime('%b %d, %Y') if metadata['last_updated'] else None
+st.markdown(render_footer(update_text), unsafe_allow_html=True)
