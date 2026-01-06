@@ -131,13 +131,25 @@ def get_base_styles() -> str:
         color: #fafafa !important;
     }
 
-    /* Catch-all for any sidebar text */
-    [data-testid="stSidebar"] * {
+    /* Sidebar headers and labels - but NOT form inputs */
+    [data-testid="stSidebar"] h1,
+    [data-testid="stSidebar"] h2,
+    [data-testid="stSidebar"] h3,
+    [data-testid="stSidebar"] p,
+    [data-testid="stSidebar"] label {
         color: #fafafa !important;
     }
 
-    [data-testid="stSidebar"] span {
-        color: #fafafa !important;
+    /* Keep sidebar form inputs readable (dark text on light bg) */
+    [data-testid="stSidebar"] select,
+    [data-testid="stSidebar"] input,
+    [data-testid="stSidebar"] [data-baseweb="select"] {
+        color: #0a0a0a !important;
+        background-color: #ffffff !important;
+    }
+
+    [data-testid="stSidebar"] [data-baseweb="select"] * {
+        color: #0a0a0a !important;
     }
 
     /* ===== HERO SECTION ===== */
