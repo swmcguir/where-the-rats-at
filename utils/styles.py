@@ -93,6 +93,21 @@ def get_base_styles() -> str:
         color: var(--accent) !important;
     }
 
+    /* Force sidebar nav labels to always be visible */
+    [data-testid="stSidebarNav"] span {
+        opacity: 1 !important;
+        visibility: visible !important;
+    }
+
+    [data-testid="stSidebarNav"] a {
+        color: #fafafa !important;
+        opacity: 1 !important;
+    }
+
+    [data-testid="stSidebarNav"] li {
+        opacity: 1 !important;
+    }
+
     /* ===== HERO SECTION ===== */
     .hero-container {
         text-align: center;
