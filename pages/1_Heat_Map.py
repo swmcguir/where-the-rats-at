@@ -106,7 +106,7 @@ st.markdown('</div></div>', unsafe_allow_html=True)
 # Stats
 summary = get_city_summary(df)
 
-stats_html = f'''<div class="card"><div class="card-header">Summary Stats</div><div class="card-body"><div style="display:grid;grid-template-columns:repeat(4,1fr);gap:1rem;"><div class="stat-box"><p class="stat-value">{summary['total_complaints']:,}</p><p class="stat-label">Total Complaints</p></div><div class="stat-box"><p class="stat-value">{summary['median_response_days']}</p><p class="stat-label">Median Response (Days)</p></div><div class="stat-box"><p class="stat-value">{summary['completion_rate']}%</p><p class="stat-label">Completion Rate</p></div><div class="stat-box"><p class="stat-value">{summary['wards_with_data']}</p><p class="stat-label">Wards Affected</p></div></div></div></div>'''
+stats_html = f'''<div class="card"><div class="card-header">Summary Stats</div><div class="card-body"><div class="stats-grid-4"><div class="stat-box"><p class="stat-value">{summary['total_complaints']:,}</p><p class="stat-label">Total Complaints</p></div><div class="stat-box"><p class="stat-value">{summary['median_response_days']}</p><p class="stat-label">Median Response (Days)</p></div><div class="stat-box"><p class="stat-value">{summary['completion_rate']}%</p><p class="stat-label">Completion Rate</p></div><div class="stat-box"><p class="stat-value">{summary['wards_with_data']}</p><p class="stat-label">Wards Affected</p></div></div></div></div>'''
 st.markdown(stats_html, unsafe_allow_html=True)
 
 # Top wards

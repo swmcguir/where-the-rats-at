@@ -102,13 +102,13 @@ def main():
     peak_ward = int(df['ward'].mode().iloc[0]) if not df['ward'].mode().empty else "N/A"
 
     stats_html = f'''<div class="card"><div class="card-header">City-Wide Stats / Last 12 Months</div><div class="card-body">
-    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:1rem;margin-bottom:1rem;">
+    <div class="stats-grid-4" style="margin-bottom:1rem;">
     <div class="stat-box"><p class="stat-value">{summary['total_complaints']:,}</p><p class="stat-label">Total Complaints</p></div>
     <div class="stat-box"><p class="stat-value">{summary['median_response_days']}</p><p class="stat-label">Median Response (Days)</p></div>
     <div class="stat-box"><p class="stat-value">{summary['completion_rate']}%</p><p class="stat-label">Completion Rate</p></div>
     <div class="stat-box"><p class="stat-value">{summary['wards_with_data']}</p><p class="stat-label">Wards Tracked</p></div>
     </div>
-    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:1rem;">
+    <div class="stats-grid-4">
     <div class="stat-box"><p class="stat-value">{peak_zip}</p><p class="stat-label">Top Zip Code</p></div>
     <div class="stat-box"><p class="stat-value">{peak_month}</p><p class="stat-label">Peak Month</p></div>
     <div class="stat-box"><p class="stat-value">{peak_time}</p><p class="stat-label">Peak Hour</p></div>

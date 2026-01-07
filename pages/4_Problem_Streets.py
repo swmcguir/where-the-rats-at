@@ -89,7 +89,7 @@ pct = (top_20_complaints / total_complaints * 100) if total_complaints > 0 else 
 worst_street = top_20.iloc[0]['street_name'] if len(top_20) > 0 else "N/A"
 worst_count = int(top_20.iloc[0]['complaints']) if len(top_20) > 0 else 0
 
-st.markdown(f'<div class="card"><div class="card-header">Summary / {filter_label}</div><div class="card-body"><div style="display:grid;grid-template-columns:repeat(3,1fr);gap:1rem;"><div class="stat-box"><p class="stat-value">{len(street_stats):,}</p><p class="stat-label">Total Streets</p></div><div class="stat-box"><p class="stat-value" style="font-size:1.25rem;">{worst_street}</p><p class="stat-label">Worst Street ({worst_count:,} complaints)</p></div><div class="stat-box"><p class="stat-value">{pct:.0f}%</p><p class="stat-label">Top 20 Streets (of all complaints)</p></div></div></div></div>', unsafe_allow_html=True)
+st.markdown(f'<div class="card"><div class="card-header">Summary / {filter_label}</div><div class="card-body"><div class="stats-grid-3"><div class="stat-box"><p class="stat-value">{len(street_stats):,}</p><p class="stat-label">Total Streets</p></div><div class="stat-box"><p class="stat-value" style="font-size:1.25rem;">{worst_street}</p><p class="stat-label">Worst Street ({worst_count:,} complaints)</p></div><div class="stat-box"><p class="stat-value">{pct:.0f}%</p><p class="stat-label">Top 20 Streets (of all complaints)</p></div></div></div></div>', unsafe_allow_html=True)
 
 # Data table
 st.markdown(f'<p style="font-size:0.875rem;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;margin:1.5rem 0 0.75rem 0;background:#0a0a0a;color:#fafafa;padding:0.875rem 1.25rem;">All Streets / {filter_label}</p>', unsafe_allow_html=True)
