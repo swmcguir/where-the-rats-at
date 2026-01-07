@@ -5,9 +5,44 @@ Chicago Rat Response Tracker - Exposing service equity one ward at a time.
 
 import streamlit as st
 import pandas as pd
+import requests
 from data.fetch import fetch_rodent_complaints, fetch_aldermen
 from utils.metrics import get_city_summary, calculate_ward_metrics, calculate_ward_grades
 from utils.styles import get_base_styles, render_hero, render_footer, get_grade_color
+
+# Historical views before counter was added
+HISTORICAL_VIEWS = 18
+
+def get_view_count():
+    """Get and increment view count using CountAPI. Only counts once per session."""
+    # Check if we've already counted this session
+    if 'view_counted' not in st.session_state:
+        st.session_state.view_counted = False
+
+    try:
+        if not st.session_state.view_counted:
+            # First visit this session - increment counter
+            response = requests.get(
+                "https://countapi.mileshilliard.com/api/v1/hit/chicago-rats-wheretheratsat-visits",
+                timeout=5
+            )
+            st.session_state.view_counted = True
+        else:
+            # Already counted - just get current value
+            response = requests.get(
+                "https://countapi.mileshilliard.com/api/v1/get/chicago-rats-wheretheratsat-visits",
+                timeout=5
+            )
+
+        if response.status_code == 200:
+            data = response.json()
+            # API returns value as string, need to convert
+            count = int(data.get('value', 0))
+            return count + HISTORICAL_VIEWS
+    except:
+        pass
+
+    return None  # Return None if API fails - we'll hide the counter
 
 st.set_page_config(
     page_title="Where the Rats At?",
@@ -143,6 +178,11 @@ def main():
             'Status': st.column_config.TextColumn('Status')
         }
     )
+
+    # View counter
+    view_count = get_view_count()
+    if view_count:
+        st.markdown(f'<p style="text-align:center;color:#737373;font-size:0.875rem;margin:2rem 0 1rem 0;font-style:italic;">{view_count:,} people are curious where the rats at</p>', unsafe_allow_html=True)
 
     # Footer
     latest_complaint = df['created_date'].max()
