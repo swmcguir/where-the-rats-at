@@ -2,6 +2,7 @@
 
 import streamlit as st
 import pandas as pd
+import numpy as np
 import requests
 import math
 from datetime import datetime, timedelta
@@ -14,7 +15,7 @@ st.set_page_config(
     page_title="My Block | Where the Rats At?",
     page_icon="data/jpeg/Party Rat.png",
     layout="wide",
-    initial_sidebar_state="expanded"
+    initial_sidebar_state="auto"
 )
 
 st.markdown(get_base_styles(), unsafe_allow_html=True)
@@ -53,22 +54,6 @@ def geocode_address(address: str) -> tuple[float, float] | None:
         return None
 
 
-def haversine_distance(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
-    """
-    Calculate the great-circle distance between two points in miles.
-    """
-    lat1_rad = math.radians(lat1)
-    lat2_rad = math.radians(lat2)
-    delta_lat = math.radians(lat2 - lat1)
-    delta_lon = math.radians(lon2 - lon1)
-
-    a = math.sin(delta_lat / 2) ** 2 + \
-        math.cos(lat1_rad) * math.cos(lat2_rad) * math.sin(delta_lon / 2) ** 2
-    c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
-
-    return EARTH_RADIUS_MILES * c
-
-
 def filter_by_radius(df: pd.DataFrame, center_lat: float, center_lon: float, radius_miles: float) -> pd.DataFrame:
     """
     Filter DataFrame to only include rows within radius_miles of center point.
@@ -79,11 +64,14 @@ def filter_by_radius(df: pd.DataFrame, center_lat: float, center_lon: float, rad
     # Filter out rows without coordinates
     df_valid = df.dropna(subset=['latitude', 'longitude']).copy()
 
-    # Calculate distance for each point
-    df_valid['distance_miles'] = df_valid.apply(
-        lambda row: haversine_distance(center_lat, center_lon, row['latitude'], row['longitude']),
-        axis=1
-    )
+    # Vectorized haversine - row-wise apply takes seconds over 3 years of data
+    lat1 = math.radians(center_lat)
+    lat2 = np.radians(df_valid['latitude'].to_numpy(dtype=float))
+    delta_lat = lat2 - lat1
+    delta_lon = np.radians(df_valid['longitude'].to_numpy(dtype=float)) - math.radians(center_lon)
+    a = np.sin(delta_lat / 2) ** 2 + \
+        math.cos(lat1) * np.cos(lat2) * np.sin(delta_lon / 2) ** 2
+    df_valid['distance_miles'] = EARTH_RADIUS_MILES * 2 * np.arctan2(np.sqrt(a), np.sqrt(1 - a))
 
     # Filter by radius
     return df_valid[df_valid['distance_miles'] <= radius_miles].copy()
@@ -113,17 +101,23 @@ def calculate_block_metrics(df: pd.DataFrame, df_nearby: pd.DataFrame) -> dict:
         trend_pct = ((len(last_90) - len(prev_90)) / len(prev_90)) * 100
         trend = trend_pct
 
-    # Response time stats
-    completed = df_nearby[df_nearby['response_days'].notna()]
+    # Response time stats - completed complaints only, matching the rest of the site
+    completed = df_nearby[
+        (df_nearby['status'].str.contains('Completed', case=False, na=False)) &
+        (df_nearby['response_days'].notna())
+    ]
     median_response = completed['response_days'].median() if len(completed) > 0 else None
 
     # City-wide median for comparison
-    city_completed = df[df['response_days'].notna()]
+    city_completed = df[
+        (df['status'].str.contains('Completed', case=False, na=False)) &
+        (df['response_days'].notna())
+    ]
     city_median = city_completed['response_days'].median() if len(city_completed) > 0 else None
 
-    # Get the ward(s) in this area
-    wards = df_nearby['ward'].dropna().unique()
-    primary_ward = int(wards[0]) if len(wards) > 0 else None
+    # The ward most complaints in this area fall in (a radius can straddle wards)
+    ward_mode = df_nearby['ward'].mode()
+    primary_ward = int(ward_mode.iloc[0]) if not ward_mode.empty else None
 
     return {
         'total': len(df_nearby),
@@ -165,8 +159,8 @@ def render_mini_map(center_lat: float, center_lon: float, df_nearby: pd.DataFram
         weight=2
     ).add_to(m)
 
-    # Add complaint markers (limit to 100 for performance)
-    for _, row in df_nearby.head(100).iterrows():
+    # Add complaint markers (most recent 100, for performance)
+    for _, row in df_nearby.nlargest(100, 'created_date').iterrows():
         if pd.notna(row['latitude']) and pd.notna(row['longitude']):
             # Color by status
             color = 'red' if 'open' in str(row['status']).lower() else 'gray'
@@ -274,9 +268,15 @@ if address_input:
         else:
             st.info("No complaints found within 0.25 miles. Lucky block!")
 
-    # Street breakdown
+    # Street breakdown (full street identity so N/S streets don't merge)
     if len(df_nearby) > 0:
-        street_counts = df_nearby.groupby('street_name').size().reset_index(name='complaints')
+        df_nearby['street_full'] = (
+            df_nearby['street_direction'].fillna('') + ' ' +
+            df_nearby['street_name'].fillna('') + ' ' +
+            df_nearby['street_type'].fillna('')
+        ).str.split().str.join(' ')
+        street_counts = df_nearby.groupby('street_full').size().reset_index(name='complaints')
+        street_counts = street_counts.rename(columns={'street_full': 'street_name'})
         street_counts = street_counts.sort_values('complaints', ascending=False).head(5)
 
         rows_html = ""

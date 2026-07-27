@@ -10,7 +10,7 @@ st.set_page_config(
     page_title="Temporal Patterns | Where the Rats At?",
     page_icon="data/jpeg/Party Rat.png",
     layout="wide",
-    initial_sidebar_state="expanded"
+    initial_sidebar_state="auto"
 )
 
 st.markdown(get_base_styles(), unsafe_allow_html=True)

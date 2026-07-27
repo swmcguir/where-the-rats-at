@@ -10,7 +10,7 @@ st.set_page_config(
     page_title="Problem Streets | Where the Rats At?",
     page_icon="data/jpeg/Party Rat.png",
     layout="wide",
-    initial_sidebar_state="expanded"
+    initial_sidebar_state="auto"
 )
 
 st.markdown(get_base_styles(), unsafe_allow_html=True)
@@ -44,14 +44,23 @@ else:
     df_filtered = df
     filter_label = "City-Wide"
 
-street_stats = df_filtered.groupby('street_name').agg(
+# Group by full street identity - bare street_name would merge
+# e.g. N WESTERN AVE and S WESTERN AVE into one street
+df_filtered = df_filtered.copy()
+df_filtered['street_full'] = (
+    df_filtered['street_direction'].fillna('') + ' ' +
+    df_filtered['street_name'].fillna('') + ' ' +
+    df_filtered['street_type'].fillna('')
+).str.split().str.join(' ')
+
+street_stats = df_filtered.groupby('street_full').agg(
     complaints=('sr_number', 'count'),
     avg_response=('response_days', 'mean'),
     median_response=('response_days', 'median'),
-    completion_rate=('status', lambda x: (x == 'Completed').mean() * 100)
+    completion_rate=('status', lambda x: x.str.contains('Completed', case=False, na=False).mean() * 100)
 ).reset_index()
 
-street_stats = street_stats.dropna(subset=['street_name'])
+street_stats = street_stats.rename(columns={'street_full': 'street_name'})
 street_stats = street_stats[street_stats['street_name'].str.strip() != '']
 street_stats = street_stats.sort_values('complaints', ascending=False)
 

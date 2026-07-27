@@ -47,8 +47,20 @@ def fetch_rodent_complaints(days_back: int = 365 * 3) -> pd.DataFrame:
     if df.empty:
         return df
 
+    # Socrata omits a column entirely if it is null for every returned record,
+    # so guarantee the schema pages rely on
+    expected_columns = [
+        'sr_number', 'sr_type', 'created_date', 'closed_date', 'status',
+        'street_address', 'street_name', 'street_direction', 'street_type',
+        'ward', 'community_area', 'zip_code', 'latitude', 'longitude'
+    ]
+    for col in expected_columns:
+        if col not in df.columns:
+            df[col] = None
+
     # Convert data types
-    df['created_date'] = pd.to_datetime(df['created_date'])
+    df['created_date'] = pd.to_datetime(df['created_date'], errors='coerce')
+    df = df.dropna(subset=['created_date'])
     df['closed_date'] = pd.to_datetime(df['closed_date'], errors='coerce')
     df['ward'] = pd.to_numeric(df['ward'], errors='coerce')
     df['community_area'] = pd.to_numeric(df['community_area'], errors='coerce')
@@ -70,32 +82,48 @@ def fetch_rodent_complaints(days_back: int = 365 * 3) -> pd.DataFrame:
     return df
 
 
+ALDERMEN_COLUMNS = ['ward', 'alderman', 'address', 'city', 'state',
+                    'zipcode', 'ward_phone', 'website']
+
+
 @st.cache_data(ttl=86400)  # Cache for 24 hours
 def fetch_aldermen() -> pd.DataFrame:
     """Fetch current alderman information by ward.
 
     Returns:
-        DataFrame with alderman name, ward, contact info (empty DataFrame on error)
+        DataFrame with alderman name, ward, contact info. Always contains
+        ALDERMEN_COLUMNS (empty but well-formed on error) so callers can
+        merge without guarding.
     """
     try:
         client = Socrata(CHICAGO_DATA_PORTAL, None)
 
         results = client.get(
             DATASET_WARD_OFFICES,
-            select="ward, alderman, address, city, state, zipcode, ward_phone, website",
+            select=", ".join(ALDERMEN_COLUMNS),
             limit=60  # 50 wards + buffer
         )
 
         df = pd.DataFrame.from_records(results)
 
-        if not df.empty:
-            df['ward'] = pd.to_numeric(df['ward'], errors='coerce')
-            df = df.sort_values('ward')
+        if df.empty:
+            return pd.DataFrame(columns=ALDERMEN_COLUMNS).astype({'ward': 'float64'})
+
+        for col in ALDERMEN_COLUMNS:
+            if col not in df.columns:
+                df[col] = None
+
+        df['ward'] = pd.to_numeric(df['ward'], errors='coerce')
+        # Socrata returns URL-typed fields as dicts like {'url': '...'}
+        df['website'] = df['website'].apply(
+            lambda v: v.get('url') if isinstance(v, dict) else v
+        )
+        df = df.sort_values('ward')
 
         return df
     except Exception as e:
         st.warning(f"Could not fetch alderman data: {e}")
-        return pd.DataFrame()
+        return pd.DataFrame(columns=ALDERMEN_COLUMNS).astype({'ward': 'float64'})
 
 
 @st.cache_data(ttl=3600)  # Cache for 1 hour

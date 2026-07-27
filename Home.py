@@ -14,41 +14,34 @@ from utils.styles import get_base_styles, render_hero, render_footer, get_grade_
 HISTORICAL_VIEWS = 18
 
 def get_view_count():
-    """Get and increment view count using CountAPI. Only counts once per session."""
-    # Check if we've already counted this session
-    if 'view_counted' not in st.session_state:
-        st.session_state.view_counted = False
+    """Get and increment view count using CountAPI. Only counts once per session.
 
+    The result (including a failure) is cached in session state so reruns
+    never re-hit the API or block on its timeout.
+    """
+    if 'view_count' in st.session_state:
+        return st.session_state.view_count
+
+    count = None
     try:
-        if not st.session_state.view_counted:
-            # First visit this session - increment counter
-            response = requests.get(
-                "https://countapi.mileshilliard.com/api/v1/hit/chicago-rats-wheretheratsat-visits",
-                timeout=5
-            )
-            st.session_state.view_counted = True
-        else:
-            # Already counted - just get current value
-            response = requests.get(
-                "https://countapi.mileshilliard.com/api/v1/get/chicago-rats-wheretheratsat-visits",
-                timeout=5
-            )
-
+        response = requests.get(
+            "https://countapi.mileshilliard.com/api/v1/hit/chicago-rats-wheretheratsat-visits",
+            timeout=3
+        )
         if response.status_code == 200:
-            data = response.json()
             # API returns value as string, need to convert
-            count = int(data.get('value', 0))
-            return count + HISTORICAL_VIEWS
-    except:
-        pass
+            count = int(response.json().get('value', 0)) + HISTORICAL_VIEWS
+    except Exception:
+        pass  # Hide the counter if the API is unavailable
 
-    return None  # Return None if API fails - we'll hide the counter
+    st.session_state.view_count = count
+    return count
 
 st.set_page_config(
     page_title="Where the Rats At?",
     page_icon="data/jpeg/Party Rat.png",
     layout="wide",
-    initial_sidebar_state="expanded"
+    initial_sidebar_state="auto"
 )
 
 # Apply base styles
@@ -99,7 +92,8 @@ def main():
     else:
         peak_zip = "N/A"
 
-    peak_ward = int(df['ward'].mode().iloc[0]) if not df['ward'].mode().empty else "N/A"
+    ward_mode = df['ward'].mode()
+    peak_ward = f"Ward {int(ward_mode.iloc[0])}" if not ward_mode.empty else "N/A"
 
     stats_html = f'''<div class="card"><div class="card-header">City-Wide Stats / Last 12 Months</div><div class="card-body">
     <div class="stats-grid-4" style="margin-bottom:1rem;">
@@ -112,40 +106,33 @@ def main():
     <div class="stat-box"><p class="stat-value">{peak_zip}</p><p class="stat-label">Top Zip Code</p></div>
     <div class="stat-box"><p class="stat-value">{peak_month}</p><p class="stat-label">Peak Month</p></div>
     <div class="stat-box"><p class="stat-value">{peak_time}</p><p class="stat-label">Peak Hour</p></div>
-    <div class="stat-box"><p class="stat-value">Ward {peak_ward}</p><p class="stat-label">Most Complaints</p></div>
+    <div class="stat-box"><p class="stat-value">{peak_ward}</p><p class="stat-label">Most Complaints</p></div>
     </div>
     </div></div>'''
     st.markdown(stats_html, unsafe_allow_html=True)
 
     # === FASTEST / SLOWEST ===
+    def render_ward_table(subset: pd.DataFrame, header: str) -> str:
+        subset = subset[['ward', 'median_response', 'grade', 'total_complaints']].copy()
+        subset = subset.merge(aldermen[['ward', 'alderman']], on='ward', how='left')
+        subset['median_response'] = subset['median_response'].round(1)
+
+        rows_html = ""
+        for _, row in subset.iterrows():
+            grade = row['grade']
+            alderman = row['alderman'] if pd.notna(row['alderman']) else "—"
+            rows_html += f'<tr style="border-bottom:1px solid #e5e5e5;"><td style="padding:0.5rem;font-weight:600;">{int(row["ward"])}</td><td style="padding:0.5rem;">{alderman}</td><td style="text-align:right;padding:0.5rem;">{row["median_response"]}</td><td style="text-align:center;padding:0.5rem;"><span class="grade-badge grade-{grade.lower()}">{grade}</span></td></tr>'
+
+        return f'<div class="card"><div class="card-header">{header}</div><div class="card-body"><table style="width:100%;border-collapse:collapse;font-size:0.875rem;"><tr style="border-bottom:2px solid #171717;"><th style="text-align:left;padding:0.5rem;">Ward</th><th style="text-align:left;padding:0.5rem;">Alderman</th><th style="text-align:right;padding:0.5rem;">Days</th><th style="text-align:center;padding:0.5rem;">Grade</th></tr>{rows_html}</table></div></div>'
+
     col_fast, col_slow = st.columns(2)
 
     with col_fast:
-        top_5 = ward_metrics.head(5)[['ward', 'median_response', 'grade', 'total_complaints']].copy()
-        top_5 = top_5.merge(aldermen[['ward', 'alderman']], on='ward', how='left')
-        top_5['ward'] = top_5['ward'].astype(int)
-        top_5['median_response'] = top_5['median_response'].round(1)
-
-        rows_html = ""
-        for _, row in top_5.iterrows():
-            grade = row['grade']
-            rows_html += f'<tr style="border-bottom:1px solid #e5e5e5;"><td style="padding:0.5rem;font-weight:600;">{int(row["ward"])}</td><td style="padding:0.5rem;">{row["alderman"] or "—"}</td><td style="text-align:right;padding:0.5rem;">{row["median_response"]}</td><td style="text-align:center;padding:0.5rem;"><span class="grade-badge grade-{grade.lower()}">{grade}</span></td></tr>'
-
-        st.markdown(f'<div class="card"><div class="card-header">Fastest Response / Top 5</div><div class="card-body"><table style="width:100%;border-collapse:collapse;font-size:0.875rem;"><tr style="border-bottom:2px solid #171717;"><th style="text-align:left;padding:0.5rem;">Ward</th><th style="text-align:left;padding:0.5rem;">Alderman</th><th style="text-align:right;padding:0.5rem;">Days</th><th style="text-align:center;padding:0.5rem;">Grade</th></tr>{rows_html}</table></div></div>', unsafe_allow_html=True)
+        st.markdown(render_ward_table(ward_metrics.head(5), "Fastest Response / Top 5"), unsafe_allow_html=True)
 
     with col_slow:
-        bottom_5 = ward_metrics.tail(5)[['ward', 'median_response', 'grade', 'total_complaints']].copy()
-        bottom_5 = bottom_5.merge(aldermen[['ward', 'alderman']], on='ward', how='left')
-        bottom_5['ward'] = bottom_5['ward'].astype(int)
-        bottom_5['median_response'] = bottom_5['median_response'].round(1)
-        bottom_5 = bottom_5.sort_values('median_response', ascending=False)
-
-        rows_html = ""
-        for _, row in bottom_5.iterrows():
-            grade = row['grade']
-            rows_html += f'<tr style="border-bottom:1px solid #e5e5e5;"><td style="padding:0.5rem;font-weight:600;">{int(row["ward"])}</td><td style="padding:0.5rem;">{row["alderman"] or "—"}</td><td style="text-align:right;padding:0.5rem;">{row["median_response"]}</td><td style="text-align:center;padding:0.5rem;"><span class="grade-badge grade-{grade.lower()}">{grade}</span></td></tr>'
-
-        st.markdown(f'<div class="card"><div class="card-header">Slowest Response / Bottom 5</div><div class="card-body"><table style="width:100%;border-collapse:collapse;font-size:0.875rem;"><tr style="border-bottom:2px solid #171717;"><th style="text-align:left;padding:0.5rem;">Ward</th><th style="text-align:left;padding:0.5rem;">Alderman</th><th style="text-align:right;padding:0.5rem;">Days</th><th style="text-align:center;padding:0.5rem;">Grade</th></tr>{rows_html}</table></div></div>', unsafe_allow_html=True)
+        bottom_5 = ward_metrics.tail(5).sort_values('median_response', ascending=False)
+        st.markdown(render_ward_table(bottom_5, "Slowest Response / Bottom 5"), unsafe_allow_html=True)
 
     # === GRADE DISTRIBUTION ===
     grade_order = ['A', 'B', 'C', 'D', 'F']
@@ -167,7 +154,14 @@ def main():
     latest_reports = df.nlargest(8, 'created_date')[['created_date', 'ward', 'street_address', 'status']].copy()
     latest_reports['ward'] = latest_reports['ward'].apply(lambda x: f"Ward {int(x)}" if pd.notna(x) else "N/A")
     latest_reports['created_date'] = latest_reports['created_date'].dt.strftime('%b %d, %I:%M %p')
-    latest_reports['status'] = latest_reports['status'].apply(lambda x: 'Open' if 'open' in str(x).lower() else 'Completed')
+    def clean_status(x):
+        s = str(x).lower()
+        if 'open' in s:
+            return 'Open'
+        if 'cancel' in s:
+            return 'Canceled'
+        return 'Completed'
+    latest_reports['status'] = latest_reports['status'].apply(clean_status)
     latest_reports.columns = ['Reported', 'Ward', 'Address', 'Status']
 
     st.dataframe(
