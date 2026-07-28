@@ -11,7 +11,7 @@ st.set_page_config(
     page_title="Ward Rankings | Where the Rats At?",
     page_icon="data/jpeg/Party Rat.png",
     layout="wide",
-    initial_sidebar_state="expanded"
+    initial_sidebar_state="auto"
 )
 
 st.markdown(get_base_styles(), unsafe_allow_html=True)
@@ -34,43 +34,46 @@ ward_metrics = calculate_ward_grades(ward_metrics)
 ward_metrics = ward_metrics.merge(aldermen[['ward', 'alderman']], on='ward', how='left')
 
 # Bar chart header
-st.markdown('<p style="font-size:0.875rem;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;margin:1rem 0 0.75rem 0;background:#0a0a0a;color:#fafafa;padding:0.875rem 1.25rem;">Median Response Time by Ward</p>', unsafe_allow_html=True)
+st.markdown('<p class="section-label"><span>Median Response Time by Ward</span></p>', unsafe_allow_html=True)
 
 grade_order_map = {'A': 0, 'B': 1, 'C': 2, 'D': 3, 'F': 4}
 ward_metrics['grade_order'] = ward_metrics['grade'].map(grade_order_map)
-ward_metrics_sorted = ward_metrics.sort_values(['grade_order', 'median_response'], ascending=[True, True])
+ward_metrics_sorted = ward_metrics.sort_values(['grade_order', 'median_response'], ascending=[True, True]).copy()
+# Plot wards as categories, not numbers - a numeric y-axis ignores categoryarray
+# and silently renders bars in ward-number order instead of grade order
+ward_metrics_sorted['ward_label'] = 'Ward ' + ward_metrics_sorted['ward'].astype(int).astype(str)
 
 fig = px.bar(
     ward_metrics_sorted,
     x='median_response',
-    y='ward',
+    y='ward_label',
     orientation='h',
     color='grade',
     color_discrete_map={'A': '#10b981', 'B': '#84cc16', 'C': '#f59e0b', 'D': '#f97316', 'F': '#ef4444'},
     category_orders={'grade': ['A', 'B', 'C', 'D', 'F']},
     hover_data=['alderman', 'total_complaints', 'completion_rate'],
-    labels={'median_response': 'Median Response (Days)', 'ward': 'Ward', 'grade': 'Grade', 'alderman': 'Alderman', 'total_complaints': 'Total Complaints', 'completion_rate': 'Completion Rate %'}
+    labels={'median_response': 'Median Response (Days)', 'ward_label': 'Ward', 'grade': 'Grade', 'alderman': 'Alderman', 'total_complaints': 'Total Complaints', 'completion_rate': 'Completion Rate %'}
 )
 
-ward_order = ward_metrics_sorted['ward'].astype(str).tolist()[::-1]
+ward_order = ward_metrics_sorted['ward_label'].tolist()[::-1]
 
 fig.update_layout(
     height=1200,
-    yaxis={'categoryorder': 'array', 'categoryarray': ward_order, 'dtick': 1, 'title': None, 'tickfont': {'family': 'Space Mono, monospace', 'size': 11}},
-    xaxis={'title': {'text': 'Median Response (Days)', 'font': {'family': 'Space Grotesk, sans-serif', 'size': 12}}, 'tickfont': {'family': 'Space Mono, monospace', 'size': 11}, 'gridcolor': '#e5e5e5', 'gridwidth': 1},
+    yaxis={'categoryorder': 'array', 'categoryarray': ward_order, 'dtick': 1, 'title': None, 'tickfont': {'family': 'Inter, sans-serif', 'size': 11}},
+    xaxis={'title': {'text': 'Median Response (Days)', 'font': {'family': 'Space Grotesk, sans-serif', 'size': 12}}, 'tickfont': {'family': 'Inter, sans-serif', 'size': 11}, 'gridcolor': '#e5e5e5', 'gridwidth': 1},
     showlegend=True,
-    legend={'title': {'text': 'Grade', 'font': {'family': 'Space Grotesk, sans-serif', 'size': 12}}, 'font': {'family': 'Space Mono, monospace', 'size': 11}, 'orientation': 'h', 'yanchor': 'bottom', 'y': 1.02, 'xanchor': 'center', 'x': 0.5},
-    font_family="Space Mono, monospace",
+    legend={'title': {'text': 'Grade', 'font': {'family': 'Space Grotesk, sans-serif', 'size': 12}}, 'font': {'family': 'Inter, sans-serif', 'size': 11}, 'orientation': 'h', 'yanchor': 'bottom', 'y': 1.02, 'xanchor': 'center', 'x': 0.5},
+    font_family="Inter, sans-serif",
     paper_bgcolor='rgba(0,0,0,0)',
     plot_bgcolor='rgba(0,0,0,0)',
     margin={'l': 60, 'r': 20, 't': 60, 'b': 40}
 )
-fig.update_traces(marker_line_width=0, opacity=0.9, hovertemplate='<b>Ward %{y}</b><br>Response: %{x:.1f} days<br>Alderman: %{customdata[0]}<br>Complaints: %{customdata[1]:,}<extra></extra>')
+fig.update_traces(marker_line_width=0, opacity=0.9, hovertemplate='<b>%{y}</b><br>Response: %{x:.1f} days<br>Alderman: %{customdata[0]}<br>Complaints: %{customdata[1]:,}<extra></extra>')
 
 st.plotly_chart(fig, use_container_width=True)
 
 # Data table header
-st.markdown('<p style="font-size:0.875rem;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;margin:1.5rem 0 0.75rem 0;background:#0a0a0a;color:#fafafa;padding:0.875rem 1.25rem;">Full Rankings Table</p>', unsafe_allow_html=True)
+st.markdown('<p class="section-label"><span>Full Rankings Table</span></p>', unsafe_allow_html=True)
 
 display_table = ward_metrics[['rank', 'ward', 'alderman', 'median_response', 'mean_response', 'p90_response', 'total_complaints', 'completion_rate', 'grade']].copy()
 display_table.columns = ['Rank', 'Ward', 'Alderman', 'Median (days)', 'Mean (days)', 'P90 (days)', 'Complaints', 'Completion %', 'Grade']
@@ -78,6 +81,7 @@ display_table['Median (days)'] = display_table['Median (days)'].round(1)
 display_table['Mean (days)'] = display_table['Mean (days)'].round(1)
 display_table['P90 (days)'] = display_table['P90 (days)'].round(1)
 display_table['Ward'] = display_table['Ward'].astype(int)
+display_table['Alderman'] = display_table['Alderman'].fillna('—')
 
 st.dataframe(
     display_table,

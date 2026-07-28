@@ -13,7 +13,7 @@ st.set_page_config(
     page_title="Heat Map | Where the Rats At?",
     page_icon="data/jpeg/Party Rat.png",
     layout="wide",
-    initial_sidebar_state="expanded"
+    initial_sidebar_state="auto"
 )
 
 # Apply base styles
@@ -98,10 +98,9 @@ else:
 
     st.sidebar.caption(f"Showing {sample_size:,} of {len(df_with_coords):,} points")
 
-# Map in card
-st.markdown('<div class="card"><div class="card-body" style="padding: 0;">', unsafe_allow_html=True)
-st_folium(m, width=None, height=550, use_container_width=True)
-st.markdown('</div></div>', unsafe_allow_html=True)
+# Streamlit can't nest components inside raw-HTML divs, so no card wrapper here.
+# returned_objects=[] keeps map pans/zooms from rerunning the whole script.
+st_folium(m, width=None, height=550, use_container_width=True, returned_objects=[])
 
 # Stats
 summary = get_city_summary(df)

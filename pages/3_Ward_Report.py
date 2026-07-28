@@ -11,7 +11,7 @@ st.set_page_config(
     page_title="Ward Report Card | Where the Rats At?",
     page_icon="data/jpeg/Party Rat.png",
     layout="wide",
-    initial_sidebar_state="expanded"
+    initial_sidebar_state="auto"
 )
 
 st.markdown(get_base_styles(), unsafe_allow_html=True)
@@ -60,9 +60,10 @@ vs_city_pct = ward_data['vs_city_median']
 delta_text = f"{vs_city_pct:.0f}%" if vs_city_pct <= 0 else f"+{vs_city_pct:.0f}%"
 delta_class = "positive" if vs_city_pct <= 0 else "negative"
 rank = int(ward_data['rank'])
+total_wards = len(ward_metrics)
 rank_color = "#10b981" if rank <= 10 else ("#f59e0b" if rank <= 30 else "#ef4444")
 
-st.markdown(f'<div class="card"><div class="card-header">Performance Metrics</div><div class="card-body"><div class="stats-grid-4"><div class="stat-box"><p class="stat-value">{ward_data["median_response"]:.1f}</p><p class="stat-label">Median Response (Days)</p><p class="stat-delta {delta_class}">{delta_text} vs city</p></div><div class="stat-box"><p class="stat-value">#{rank}</p><p class="stat-label">City Ranking</p><p style="font-size:0.75rem;color:{rank_color};margin-top:0.25rem;">of 50 wards</p></div><div class="stat-box"><p class="stat-value">{int(ward_data["total_complaints"]):,}</p><p class="stat-label">Total Complaints</p></div><div class="stat-box"><p class="stat-value">{ward_data["completion_rate"]:.1f}%</p><p class="stat-label">Completion Rate</p></div></div></div></div>', unsafe_allow_html=True)
+st.markdown(f'<div class="card"><div class="card-header">Performance Metrics</div><div class="card-body"><div class="stats-grid-4"><div class="stat-box"><p class="stat-value">{ward_data["median_response"]:.1f}</p><p class="stat-label">Median Response (Days)</p><p class="stat-delta {delta_class}">{delta_text} vs city</p></div><div class="stat-box"><p class="stat-value">#{rank}</p><p class="stat-label">City Ranking</p><p style="font-size:0.75rem;color:{rank_color};margin-top:0.25rem;">of {total_wards} wards</p></div><div class="stat-box"><p class="stat-value">{int(ward_data["total_complaints"]):,}</p><p class="stat-label">Total Complaints</p></div><div class="stat-box"><p class="stat-value">{ward_data["completion_rate"]:.1f}%</p><p class="stat-label">Completion Rate</p></div></div></div></div>', unsafe_allow_html=True)
 
 # Factor breakdown
 factors = [('Speed', ward_data.get('speed_score', 0), '30%'), ('Workload', ward_data.get('volume_score', 0), '25%'), ('Worst Case', ward_data.get('p90_score', 0), '20%'), ('Consistency', ward_data.get('consistency_score', 0), '15%'), ('Completion', ward_data.get('completion_score', 0), '10%')]
@@ -82,15 +83,15 @@ resp_color = "#10b981" if resp_diff <= 0 else "#ef4444"
 comp_diff = ward_data['completion_rate'] - city_summary['completion_rate']
 comp_color = "#10b981" if comp_diff >= 0 else "#ef4444"
 
-st.markdown(f'<div class="card"><div class="card-header">Compared to City Average</div><div class="card-body"><table style="width:100%;border-collapse:collapse;font-size:0.9375rem;"><tr style="border-bottom:2px solid #171717;"><th style="text-align:left;padding:0.75rem;">Metric</th><th style="text-align:right;padding:0.75rem;">Ward {selected_ward}</th><th style="text-align:right;padding:0.75rem;">City Average</th><th style="text-align:right;padding:0.75rem;">Difference</th></tr><tr style="border-bottom:1px solid #e5e5e5;"><td style="padding:0.75rem;">Response Time (days)</td><td style="text-align:right;padding:0.75rem;font-weight:600;">{ward_data["median_response"]:.1f}</td><td style="text-align:right;padding:0.75rem;">{city_summary["median_response_days"]}</td><td style="text-align:right;padding:0.75rem;color:{resp_color};">{"+" if resp_diff > 0 else ""}{resp_diff:.1f}</td></tr><tr><td style="padding:0.75rem;">Completion Rate (%)</td><td style="text-align:right;padding:0.75rem;font-weight:600;">{ward_data["completion_rate"]:.1f}%</td><td style="text-align:right;padding:0.75rem;">{city_summary["completion_rate"]}%</td><td style="text-align:right;padding:0.75rem;color:{comp_color};">{"+" if comp_diff >= 0 else ""}{comp_diff:.1f}%</td></tr></table></div></div>', unsafe_allow_html=True)
+st.markdown(f'<div class="card"><div class="card-header">Compared to City Average</div><div class="card-body"><table style="width:100%;border-collapse:collapse;font-size:0.9375rem;"><tr style="border-bottom:1px solid #0a0a0a;"><th style="text-align:left;padding:0.75rem;">Metric</th><th style="text-align:right;padding:0.75rem;">Ward {selected_ward}</th><th style="text-align:right;padding:0.75rem;">City Average</th><th style="text-align:right;padding:0.75rem;">Difference</th></tr><tr style="border-bottom:1px solid #e5e5e5;"><td style="padding:0.75rem;">Response Time (days)</td><td style="text-align:right;padding:0.75rem;font-weight:600;">{ward_data["median_response"]:.1f}</td><td style="text-align:right;padding:0.75rem;">{city_summary["median_response_days"]}</td><td style="text-align:right;padding:0.75rem;color:{resp_color};">{"+" if resp_diff > 0 else ""}{resp_diff:.1f}</td></tr><tr><td style="padding:0.75rem;">Completion Rate (%)</td><td style="text-align:right;padding:0.75rem;font-weight:600;">{ward_data["completion_rate"]:.1f}%</td><td style="text-align:right;padding:0.75rem;">{city_summary["completion_rate"]}%</td><td style="text-align:right;padding:0.75rem;color:{comp_color};">{"+" if comp_diff >= 0 else ""}{comp_diff:.1f}%</td></tr></table></div></div>', unsafe_allow_html=True)
 
 # Share section
-share_text = f"Ward {selected_ward} gets a {ward_data['grade']} for rat response time! Median: {ward_data['median_response']:.1f} days. Rank: #{int(ward_data['rank'])} of 50 wards."
+share_text = f"Ward {selected_ward} gets a {ward_data['grade']} for rat response time! Median: {ward_data['median_response']:.1f} days. Rank: #{int(ward_data['rank'])} of {total_wards} wards."
 if pd.notna(ward_data.get('alderman')):
     share_text += f" Alderman: {ward_data['alderman']}"
 share_text += " #WhereTheRatsAt #Chicago311"
 
-st.markdown('<p style="font-size:0.875rem;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;margin:1.5rem 0 0.75rem 0;background:#0a0a0a;color:#fafafa;padding:0.875rem 1.25rem;">Share This Report Card</p>', unsafe_allow_html=True)
+st.markdown('<p class="section-label"><span>Share This Report Card</span></p>', unsafe_allow_html=True)
 st.code(share_text, language=None)
 
 col_share1, col_share2 = st.columns(2)
@@ -103,8 +104,9 @@ with col_share2:
 if pd.notna(ward_data.get('alderman')):
     phone_html = f'<p style="margin:0.5rem 0;"><strong>Phone:</strong> {ward_data["ward_phone"]}</p>' if pd.notna(ward_data.get('ward_phone')) else ""
     st.markdown(f'<div class="card"><div class="card-header">Contact Your Alderman</div><div class="card-body"><p style="font-size:1.125rem;font-weight:600;margin:0 0 1rem 0;">{ward_data["alderman"]}</p>{phone_html}</div></div>', unsafe_allow_html=True)
-    if pd.notna(ward_data.get('website')) and str(ward_data['website']).lower() != 'nan':
-        st.link_button("Visit Ward Website", str(ward_data['website']))
+    website = ward_data.get('website')
+    if pd.notna(website) and str(website).startswith('http'):
+        st.link_button("Visit Ward Website", str(website))
 
 st.caption("**How grades are calculated:** Multi-factor scoring: Speed (30%), Workload (25%), Worst-Case (20%), Consistency (15%), Completion (10%). A=80+, B=65-79, C=50-64, D=35-49, F=<35.")
 
