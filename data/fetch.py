@@ -1,5 +1,8 @@
 """Chicago Data Portal API client for rodent complaint data."""
 
+import os
+import time
+
 import pandas as pd
 from sodapy import Socrata
 from datetime import datetime, timedelta
@@ -10,39 +13,64 @@ CHICAGO_DATA_PORTAL = "data.cityofchicago.org"
 DATASET_311_REQUESTS = "v6vf-nfxy"  # All 311 service requests
 DATASET_WARD_OFFICES = "htai-wnw4"  # Alderman info
 
+# Large pulls (a year is ~50k rows) routinely exceed sodapy's 10s default,
+# especially on unauthenticated (throttled) requests
+SOCRATA_TIMEOUT_SECONDS = 90
+SOCRATA_ATTEMPTS = 3
 
-@st.cache_data(ttl=3600)  # Cache for 1 hour
-def fetch_rodent_complaints(days_back: int = 365 * 3) -> pd.DataFrame:
-    """Fetch rodent baiting complaints from Chicago 311 data.
 
-    Args:
-        days_back: Number of days of historical data to fetch
-
-    Returns:
-        DataFrame with rodent complaints (empty DataFrame on error)
-    """
+def _get_app_token():
+    """Optional Socrata app token - lifts the strict throttling on
+    anonymous requests. Set SOCRATA_APP_TOKEN as an env var or in
+    Streamlit secrets."""
+    token = os.environ.get("SOCRATA_APP_TOKEN")
+    if token:
+        return token
     try:
-        client = Socrata(CHICAGO_DATA_PORTAL, None)  # No auth needed for public data
+        return st.secrets.get("SOCRATA_APP_TOKEN")
+    except Exception:
+        return None
 
-        # Calculate date range
-        start_date = (datetime.now() - timedelta(days=days_back)).strftime("%Y-%m-%d")
 
-        # Query for rodent baiting complaints
-        # Using SoQL (Socrata Query Language)
-        results = client.get(
-            DATASET_311_REQUESTS,
-            where=f"sr_type = 'Rodent Baiting/Rat Complaint' AND created_date >= '{start_date}'",
-            select="sr_number, sr_type, created_date, closed_date, status, "
-                   "street_address, street_name, street_direction, street_type, "
-                   "ward, community_area, zip_code, latitude, longitude",
-            limit=500000,  # Get up to 500k records
-            order="created_date DESC"
-        )
+def _socrata_get(dataset: str, **query):
+    """Run a Socrata query with a generous timeout and retries.
 
-        df = pd.DataFrame.from_records(results)
-    except Exception as e:
-        st.warning(f"Could not connect to Chicago Data Portal: {e}")
-        return pd.DataFrame()
+    Raises on final failure so callers (and st.cache_data) never treat a
+    transient outage as a valid result.
+    """
+    client = Socrata(CHICAGO_DATA_PORTAL, _get_app_token(),
+                     timeout=SOCRATA_TIMEOUT_SECONDS)
+    last_error = None
+    for attempt in range(SOCRATA_ATTEMPTS):
+        try:
+            return client.get(dataset, **query)
+        except Exception as e:
+            last_error = e
+            if attempt < SOCRATA_ATTEMPTS - 1:
+                time.sleep(2 ** attempt)
+    raise last_error
+
+
+# NOTE: this raises on failure. st.cache_data does not cache exceptions,
+# so an outage never poisons the cache - the next rerun retries. The public
+# fetch_rodent_complaints wrapper converts failures to an empty DataFrame.
+@st.cache_data(ttl=3600)  # Cache for 1 hour
+def _fetch_rodent_complaints_cached(days_back: int) -> pd.DataFrame:
+    # Calculate date range
+    start_date = (datetime.now() - timedelta(days=days_back)).strftime("%Y-%m-%d")
+
+    # Query for rodent baiting complaints using SoQL (Socrata Query Language)
+    results = _socrata_get(
+        DATASET_311_REQUESTS,
+        where=f"sr_type = 'Rodent Baiting/Rat Complaint' AND created_date >= '{start_date}'",
+        select="sr_number, sr_type, created_date, closed_date, status, "
+               "street_address, street_name, street_direction, street_type, "
+               "ward, community_area, zip_code, latitude, longitude",
+        limit=500000,  # Get up to 500k records
+        order="created_date DESC"
+    )
+
+    df = pd.DataFrame.from_records(results)
 
     if df.empty:
         return df
@@ -82,11 +110,57 @@ def fetch_rodent_complaints(days_back: int = 365 * 3) -> pd.DataFrame:
     return df
 
 
+def fetch_rodent_complaints(days_back: int = 365 * 3) -> pd.DataFrame:
+    """Fetch rodent baiting complaints from Chicago 311 data.
+
+    Args:
+        days_back: Number of days of historical data to fetch
+
+    Returns:
+        DataFrame with rodent complaints (empty DataFrame on error)
+    """
+    try:
+        return _fetch_rodent_complaints_cached(days_back)
+    except Exception as e:
+        st.warning(f"Could not connect to Chicago Data Portal: {e}")
+        return pd.DataFrame()
+
+
 ALDERMEN_COLUMNS = ['ward', 'alderman', 'address', 'city', 'state',
                     'zipcode', 'ward_phone', 'website']
 
 
-@st.cache_data(ttl=86400)  # Cache for 24 hours
+def _empty_aldermen() -> pd.DataFrame:
+    return pd.DataFrame(columns=ALDERMEN_COLUMNS).astype({'ward': 'float64'})
+
+
+@st.cache_data(ttl=86400)  # Cache for 24 hours; raises on failure (not cached)
+def _fetch_aldermen_cached() -> pd.DataFrame:
+    results = _socrata_get(
+        DATASET_WARD_OFFICES,
+        select=", ".join(ALDERMEN_COLUMNS),
+        limit=60  # 50 wards + buffer
+    )
+
+    df = pd.DataFrame.from_records(results)
+
+    if df.empty:
+        return _empty_aldermen()
+
+    for col in ALDERMEN_COLUMNS:
+        if col not in df.columns:
+            df[col] = None
+
+    df['ward'] = pd.to_numeric(df['ward'], errors='coerce')
+    # Socrata returns URL-typed fields as dicts like {'url': '...'}
+    df['website'] = df['website'].apply(
+        lambda v: v.get('url') if isinstance(v, dict) else v
+    )
+    df = df.sort_values('ward')
+
+    return df
+
+
 def fetch_aldermen() -> pd.DataFrame:
     """Fetch current alderman information by ward.
 
@@ -96,34 +170,10 @@ def fetch_aldermen() -> pd.DataFrame:
         merge without guarding.
     """
     try:
-        client = Socrata(CHICAGO_DATA_PORTAL, None)
-
-        results = client.get(
-            DATASET_WARD_OFFICES,
-            select=", ".join(ALDERMEN_COLUMNS),
-            limit=60  # 50 wards + buffer
-        )
-
-        df = pd.DataFrame.from_records(results)
-
-        if df.empty:
-            return pd.DataFrame(columns=ALDERMEN_COLUMNS).astype({'ward': 'float64'})
-
-        for col in ALDERMEN_COLUMNS:
-            if col not in df.columns:
-                df[col] = None
-
-        df['ward'] = pd.to_numeric(df['ward'], errors='coerce')
-        # Socrata returns URL-typed fields as dicts like {'url': '...'}
-        df['website'] = df['website'].apply(
-            lambda v: v.get('url') if isinstance(v, dict) else v
-        )
-        df = df.sort_values('ward')
-
-        return df
+        return _fetch_aldermen_cached()
     except Exception as e:
         st.warning(f"Could not fetch alderman data: {e}")
-        return pd.DataFrame(columns=ALDERMEN_COLUMNS).astype({'ward': 'float64'})
+        return _empty_aldermen()
 
 
 @st.cache_data(ttl=3600)  # Cache for 1 hour
