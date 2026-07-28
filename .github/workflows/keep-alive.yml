@@ -1,0 +1,39 @@
+name: Keep Streamlit app awake
+
+# Streamlit Community Cloud sleeps free-tier apps after ~12 hours without
+# visitors. This visits the app with a real browser every 6 hours and clicks
+# the wake-up button if needed, so nobody ever lands on the sleep screen.
+#
+# Note: GitHub disables scheduled workflows in repos with no commit activity
+# for 60 days - if that happens, re-enable it from the Actions tab.
+
+on:
+  schedule:
+    - cron: "23 */6 * * *" # every 6 hours (UTC)
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+jobs:
+  wake:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install Playwright
+        run: |
+          pip install --quiet playwright
+          python -m playwright install --with-deps chromium
+
+      - name: Visit app and wake it if asleep
+        env:
+          # Override by defining a STREAMLIT_APP_URL repository variable
+          # (Settings > Secrets and variables > Actions > Variables)
+          APP_URL: ${{ vars.STREAMLIT_APP_URL || 'https://chicago-rats.streamlit.app' }}
+        run: python scripts/keep_alive.py
