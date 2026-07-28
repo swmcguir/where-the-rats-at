@@ -1,6 +1,7 @@
 """
-Shared styles for Where the Rats At? - Design System v2.0
-Upgraded visual design with modern polish while maintaining the retro character.
+Shared styles for Where the Rats At? - Design System v3.0
+Monochrome editorial design: black hero panels, white body, hairline borders,
+big grotesque type. Color is reserved for grades and status only.
 """
 
 # Grade color palette with extended variants
@@ -12,6 +13,16 @@ GRADE_COLORS = {
     'F': {'main': '#ef4444', 'light': '#fee2e2', 'dark': '#991b1b', 'glow': 'rgba(239, 68, 68, 0.3)'}
 }
 
+# Line-art rat mark (original), monoline style. Inherits color via currentColor.
+RAT_ICON_SVG = '''<svg width="96" height="54" viewBox="0 0 130 72" fill="none" xmlns="http://www.w3.org/2000/svg" stroke="currentColor" stroke-width="5" stroke-linecap="round" stroke-linejoin="round" role="img" aria-label="rat icon">
+<path d="M26 31 C13 31 10 17 20 14"/>
+<path d="M111 57 L31 57 C18 57 11 46 16 36 C24 20 48 12 70 15 C86 17 96 26 99 35 L113 50 C116 53 115 57 111 57 Z"/>
+<path d="M50 57 C42 51 42 41 50 36"/>
+<circle cx="87" cy="24" r="10"/>
+<circle cx="97" cy="40" r="3.5" fill="currentColor" stroke="none"/>
+</svg>'''
+
+
 def get_grade_color(grade: str, variant: str = 'main') -> str:
     """Get a grade color. Variants: main, light, dark, glow"""
     return GRADE_COLORS.get(grade, GRADE_COLORS['C'])[variant]
@@ -22,22 +33,22 @@ def get_base_styles() -> str:
     return """
 <style>
     /* ===== FONTS ===== */
-    @import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Space+Grotesk:wght@400;500;600;700&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap');
 
     :root {
-        --font-mono: 'Space Mono', monospace;
+        --font-body: 'Inter', -apple-system, 'Segoe UI', sans-serif;
         --font-display: 'Space Grotesk', sans-serif;
 
         /* Colors */
-        --bg-primary: #fafafa;
+        --bg-primary: #ffffff;
         --bg-card: #ffffff;
         --bg-dark: #0a0a0a;
         --text-primary: #0a0a0a;
         --text-secondary: #525252;
         --text-muted: #a3a3a3;
-        --border-color: #171717;
+        --border-hairline: #e7e7e7;
+        --border-strong: #0a0a0a;
         --accent: #ef4444;
-        --accent-light: #fecaca;
 
         /* Grade colors */
         --grade-a: #10b981;
@@ -47,10 +58,8 @@ def get_base_styles() -> str:
         --grade-f: #ef4444;
 
         /* Shadows */
-        --shadow-sm: 0 1px 2px rgba(0,0,0,0.05);
-        --shadow-md: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -2px rgba(0,0,0,0.1);
-        --shadow-lg: 0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -4px rgba(0,0,0,0.1);
-        --shadow-brutal: 4px 4px 0 #171717;
+        --shadow-sm: 0 1px 2px rgba(0,0,0,0.04);
+        --shadow-card: 0 12px 32px rgba(0,0,0,0.07);
 
         /* Animation */
         --transition-fast: 150ms ease;
@@ -59,12 +68,14 @@ def get_base_styles() -> str:
 
     /* ===== BASE ===== */
     html, body, [class*="css"] {
-        font-family: var(--font-mono) !important;
+        font-family: var(--font-body) !important;
         background-color: var(--bg-primary);
+        -webkit-font-smoothing: antialiased;
     }
 
     h1, h2, h3 {
         font-family: var(--font-display) !important;
+        letter-spacing: -0.02em;
     }
 
     footer {visibility: hidden;}
@@ -76,7 +87,8 @@ def get_base_styles() -> str:
 
     /* ===== SIDEBAR ===== */
     [data-testid="stSidebar"] {
-        background: linear-gradient(180deg, #0a0a0a 0%, #171717 100%);
+        background: #0a0a0a;
+        border-right: 1px solid #1f1f1f;
     }
 
     [data-testid="stSidebar"] .stMarkdown {
@@ -90,7 +102,7 @@ def get_base_styles() -> str:
     }
 
     [data-testid="stSidebar"] a:hover {
-        color: var(--accent) !important;
+        color: #a3a3a3 !important;
     }
 
     /* Force sidebar nav labels to always be visible with light text */
@@ -122,7 +134,6 @@ def get_base_styles() -> str:
         color: #fafafa !important;
     }
 
-    /* Target the actual nav link text */
     [data-testid="stSidebarNavItems"] span {
         color: #fafafa !important;
     }
@@ -152,97 +163,158 @@ def get_base_styles() -> str:
         color: #0a0a0a !important;
     }
 
-    /* ===== HERO SECTION ===== */
+    /* ===== HERO SECTION (black panel) ===== */
     .hero-container {
+        background: var(--bg-dark);
+        color: #ffffff;
         text-align: center;
-        padding: 3rem 1.5rem;
-        margin-bottom: 2rem;
+        padding: 4rem 2rem 4.5rem 2rem;
+        margin: 0.5rem 0 2.5rem 0;
+        border-radius: 12px;
         position: relative;
+    }
+
+    .hero-icon {
+        color: #ffffff;
+        margin-bottom: 1.5rem;
+    }
+
+    .hero-icon svg {
+        display: inline-block;
     }
 
     .hero-title {
         font-family: var(--font-display) !important;
-        font-size: clamp(2.5rem, 8vw, 5rem);
+        font-size: clamp(2.75rem, 7vw, 4.75rem);
         font-weight: 700;
-        color: var(--text-primary);
+        color: #ffffff;
         margin: 0;
-        text-transform: uppercase;
-        letter-spacing: -0.02em;
-        line-height: 1.1;
-        background: linear-gradient(135deg, #0a0a0a 0%, #404040 50%, #0a0a0a 100%);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        background-clip: text;
+        letter-spacing: -0.03em;
+        line-height: 1.05;
     }
 
     .hero-subtitle {
-        font-family: var(--font-mono) !important;
-        font-size: 1rem;
-        color: var(--text-secondary);
-        margin: 1rem 0 0 0;
-        letter-spacing: 0.05em;
+        font-family: var(--font-body) !important;
+        font-size: 1.0625rem;
+        color: #a3a3a3;
+        margin: 1.25rem auto 0 auto;
+        max-width: 600px;
+        line-height: 1.6;
     }
 
     .hero-badge {
-        display: inline-block;
-        background: var(--bg-dark);
-        color: #fafafa;
-        padding: 0.375rem 1rem;
-        font-size: 0.75rem;
-        font-weight: 700;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        border: 1px solid rgba(255,255,255,0.35);
+        color: #ffffff;
+        background: transparent;
+        padding: 0.45rem 1.1rem;
+        font-size: 0.6875rem;
+        font-weight: 600;
         text-transform: uppercase;
-        letter-spacing: 0.1em;
-        margin-top: 1.5rem;
-        border-radius: 2px;
+        letter-spacing: 0.16em;
+        margin-top: 1.75rem;
+        border-radius: 999px;
     }
 
     /* ===== PAGE HEADER ===== */
     .page-header {
         text-align: center;
-        padding: 2rem 1rem;
-        margin-bottom: 1.5rem;
+        padding: 2.5rem 1rem 1.5rem 1rem;
+        margin-bottom: 1rem;
+    }
+
+    .page-overline {
+        font-size: 0.6875rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.18em;
+        color: var(--text-muted);
+        margin: 0 0 0.875rem 0;
     }
 
     .page-title {
         font-family: var(--font-display) !important;
-        font-size: clamp(1.75rem, 5vw, 2.5rem);
+        font-size: clamp(2rem, 5vw, 3rem);
         font-weight: 700;
         color: var(--text-primary);
         margin: 0;
-        letter-spacing: -0.02em;
+        letter-spacing: -0.03em;
+        line-height: 1.1;
     }
 
     .page-subtitle {
         font-size: 0.9375rem;
         color: var(--text-secondary);
-        margin: 0.75rem 0 0 0;
+        margin: 0.875rem 0 0 0;
+    }
+
+    /* ===== SECTION LABELS ===== */
+    .section-label {
+        display: flex;
+        align-items: center;
+        gap: 0.875rem;
+        margin: 2.25rem 0 1rem 0;
+        font-size: 0.6875rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.16em;
+        color: var(--text-secondary);
+    }
+
+    .section-label::before {
+        content: "";
+        width: 8px;
+        height: 8px;
+        background: var(--bg-dark);
+        flex: 0 0 auto;
+    }
+
+    .section-label::after {
+        content: "";
+        flex: 1;
+        height: 1px;
+        background: var(--border-hairline);
     }
 
     /* ===== CARDS ===== */
     .card {
         background: var(--bg-card);
-        border: 2px solid var(--border-color);
-        margin: 1.5rem 0;
+        border: 1px solid var(--border-hairline);
+        border-radius: 10px;
+        margin: 1.25rem 0;
         transition: var(--transition-base);
         position: relative;
+        overflow: hidden;
     }
 
     .card:hover {
-        box-shadow: var(--shadow-brutal);
-        transform: translate(-2px, -2px);
+        box-shadow: var(--shadow-card);
+        border-color: #d4d4d4;
+        transform: translateY(-2px);
     }
 
     .card-header {
-        background: var(--bg-dark);
-        color: #fafafa;
-        padding: 0.875rem 1.25rem;
-        font-size: 0.8125rem;
-        font-weight: 700;
+        background: var(--bg-card);
+        color: var(--text-secondary);
+        padding: 0.9rem 1.4rem;
+        font-size: 0.6875rem;
+        font-weight: 600;
         text-transform: uppercase;
-        letter-spacing: 0.075em;
+        letter-spacing: 0.16em;
+        border-bottom: 1px solid var(--border-hairline);
         display: flex;
         align-items: center;
-        gap: 0.5rem;
+        gap: 0.625rem;
+    }
+
+    .card-header::before {
+        content: "";
+        width: 8px;
+        height: 8px;
+        background: var(--bg-dark);
+        flex: 0 0 auto;
     }
 
     .card-header-icon {
@@ -257,8 +329,10 @@ def get_base_styles() -> str:
     /* Static card variant (no hover effect) */
     .card-static {
         background: var(--bg-card);
-        border: 2px solid var(--border-color);
-        margin: 1.5rem 0;
+        border: 1px solid var(--border-hairline);
+        border-radius: 10px;
+        margin: 1.25rem 0;
+        overflow: hidden;
     }
 
     .card-static .card-body {
@@ -274,38 +348,39 @@ def get_base_styles() -> str:
 
     .stat-box {
         text-align: center;
-        padding: 1.25rem 1rem;
+        padding: 1.5rem 1rem;
         background: var(--bg-card);
-        border: 1px solid #e5e5e5;
-        border-radius: 4px;
+        border: 1px solid var(--border-hairline);
+        border-radius: 8px;
         transition: var(--transition-fast);
     }
 
     .stat-box:hover {
-        border-color: var(--border-color);
-        background: #fafafa;
+        border-color: var(--border-strong);
     }
 
     .stat-value {
         font-family: var(--font-display) !important;
-        font-size: 1.75rem;
+        font-size: 1.9rem;
         font-weight: 700;
         color: var(--text-primary);
         margin: 0;
-        line-height: 1.2;
+        line-height: 1.15;
+        letter-spacing: -0.02em;
     }
 
     .stat-value-lg {
-        font-size: 2.25rem;
+        font-size: 2.4rem;
     }
 
     .stat-label {
         font-size: 0.6875rem;
-        color: var(--text-secondary);
+        color: var(--text-muted);
         margin-top: 0.5rem;
         text-transform: uppercase;
-        letter-spacing: 0.05em;
-        line-height: 1.4;
+        letter-spacing: 0.1em;
+        line-height: 1.5;
+        font-weight: 500;
     }
 
     .stat-delta {
@@ -315,6 +390,16 @@ def get_base_styles() -> str:
 
     .stat-delta.positive { color: var(--grade-a); }
     .stat-delta.negative { color: var(--grade-f); }
+
+    /* Ghost numerals (White Label style 01 / 02 / 03) */
+    .ghost-number {
+        font-family: var(--font-display) !important;
+        font-size: 2.25rem;
+        font-weight: 700;
+        color: #d4d4d4;
+        line-height: 1;
+        letter-spacing: -0.02em;
+    }
 
     /* ===== GRADE BADGES ===== */
     .grade-badge {
@@ -326,7 +411,7 @@ def get_base_styles() -> str:
         font-family: var(--font-display) !important;
         font-size: 1.25rem;
         font-weight: 700;
-        border-radius: 4px;
+        border-radius: 6px;
         color: white;
     }
 
@@ -334,15 +419,15 @@ def get_base_styles() -> str:
         width: 5rem;
         height: 5rem;
         font-size: 3rem;
-        border-radius: 8px;
+        border-radius: 10px;
     }
 
     .grade-badge-xl {
         width: 8rem;
         height: 8rem;
         font-size: 5rem;
-        border-radius: 12px;
-        box-shadow: var(--shadow-lg);
+        border-radius: 14px;
+        box-shadow: var(--shadow-card);
     }
 
     .grade-a { background: var(--grade-a); }
@@ -373,7 +458,6 @@ def get_base_styles() -> str:
         font-weight: 700;
         line-height: 1;
         margin: 0;
-        text-shadow: 4px 4px 0 rgba(0,0,0,0.1);
     }
 
     .grade-ward {
@@ -392,22 +476,23 @@ def get_base_styles() -> str:
 
     /* ===== DATA TABLES ===== */
     div[data-testid="stDataFrame"] {
-        border: 2px solid var(--border-color) !important;
-        border-radius: 0 !important;
+        border: 1px solid var(--border-hairline) !important;
+        border-radius: 8px !important;
+        overflow: hidden;
     }
 
     div[data-testid="stDataFrame"] table {
-        font-family: var(--font-mono) !important;
+        font-family: var(--font-body) !important;
     }
 
     /* ===== FOOTER ===== */
     .site-footer {
         text-align: center;
-        padding: 2rem 1rem;
+        padding: 2.5rem 1rem 1rem 1rem;
         color: var(--text-muted);
         font-size: 0.75rem;
-        border-top: 2px solid var(--border-color);
-        margin-top: 3rem;
+        border-top: 1px solid var(--border-hairline);
+        margin-top: 3.5rem;
     }
 
     .site-footer a {
@@ -417,7 +502,7 @@ def get_base_styles() -> str:
     }
 
     .site-footer a:hover {
-        color: var(--accent);
+        color: var(--text-muted);
     }
 
     /* ===== LIVE INDICATOR ===== */
@@ -452,7 +537,7 @@ def get_base_styles() -> str:
         padding: 0 0.5rem;
         font-size: 0.75rem;
         font-weight: 700;
-        border-radius: 2px;
+        border-radius: 4px;
         color: white;
     }
 
@@ -462,8 +547,8 @@ def get_base_styles() -> str:
 
     /* ===== PROGRESS BAR ===== */
     .progress-container {
-        background: #e5e5e5;
-        border-radius: 2px;
+        background: #ececec;
+        border-radius: 999px;
         height: 8px;
         overflow: hidden;
         margin: 0.5rem 0;
@@ -471,7 +556,7 @@ def get_base_styles() -> str:
 
     .progress-bar {
         height: 100%;
-        background: var(--grade-a);
+        background: var(--bg-dark);
         transition: width 0.5s ease;
     }
 
@@ -496,8 +581,9 @@ def get_base_styles() -> str:
 
     /* ===== RESPONSIVE ===== */
     @media (max-width: 768px) {
-        .hero-title {
-            font-size: 2.5rem;
+        .hero-container {
+            padding: 3rem 1.25rem 3.5rem 1.25rem;
+            border-radius: 10px;
         }
 
         .stat-grid {
@@ -519,19 +605,15 @@ def get_base_styles() -> str:
         .card-body {
             padding: 1rem;
         }
-
-        .hero-container {
-            padding: 2rem 1rem;
-        }
     }
 
     @media (max-width: 480px) {
         .hero-title {
-            font-size: 2rem;
+            font-size: 2.25rem;
         }
 
         .hero-subtitle {
-            font-size: 0.875rem;
+            font-size: 0.9375rem;
         }
 
         .stats-grid-4 {
@@ -551,17 +633,16 @@ def get_base_styles() -> str:
         }
 
         .card-body {
-            padding: 0.75rem;
+            padding: 0.875rem;
         }
 
         .page-header {
-            padding: 1.5rem 0.5rem;
+            padding: 1.75rem 0.5rem 1rem 0.5rem;
         }
     }
 
     /* ===== UTILITIES ===== */
     .text-center { text-align: center; }
-    .text-mono { font-family: var(--font-mono) !important; }
     .text-display { font-family: var(--font-display) !important; }
     .text-muted { color: var(--text-muted); }
     .text-sm { font-size: 0.875rem; }
@@ -616,12 +697,13 @@ def render_grade_badge(grade: str, size: str = 'md') -> str:
 
 
 def render_hero(title: str, subtitle: str = None, badge: str = None) -> str:
-    """Render the hero section."""
+    """Render the hero section (black panel with line-art rat mark)."""
     subtitle_html = f'<p class="hero-subtitle">{subtitle}</p>' if subtitle else ''
-    badge_html = f'<span class="hero-badge">{badge}</span>' if badge else ''
+    badge_html = f'<span class="hero-badge"><span class="live-dot"></span>{badge}</span>' if badge else ''
 
     return f"""
     <div class="hero-container">
+        <div class="hero-icon">{RAT_ICON_SVG}</div>
         <h1 class="hero-title">{title}</h1>
         {subtitle_html}
         {badge_html}
@@ -630,15 +712,21 @@ def render_hero(title: str, subtitle: str = None, badge: str = None) -> str:
 
 
 def render_page_header(title: str, subtitle: str = None) -> str:
-    """Render a page header (smaller than hero)."""
+    """Render a page header (smaller than hero) with brand overline."""
     subtitle_html = f'<p class="page-subtitle">{subtitle}</p>' if subtitle else ''
 
     return f"""
     <div class="page-header">
+        <p class="page-overline">Where the Rats At?</p>
         <h1 class="page-title">{title}</h1>
         {subtitle_html}
     </div>
     """
+
+
+def render_section_label(text: str) -> str:
+    """Render a minimal uppercase section label with a hairline rule."""
+    return f'<p class="section-label"><span>{text}</span></p>'
 
 
 def render_footer(data_date: str = None) -> str:

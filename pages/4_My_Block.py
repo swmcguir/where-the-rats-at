@@ -251,12 +251,12 @@ if address_input:
     col_map, col_list = st.columns([3, 2])
 
     with col_map:
-        st.markdown('<p style="font-size:0.875rem;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:0.75rem;background:#0a0a0a;color:#fafafa;padding:0.875rem 1.25rem;">Complaint Map</p>', unsafe_allow_html=True)
+        st.markdown('<p class="section-label"><span>Complaint Map</span></p>', unsafe_allow_html=True)
         m = render_mini_map(center_lat, center_lon, df_nearby)
         st_folium(m, width=None, height=400, returned_objects=[])
 
     with col_list:
-        st.markdown('<p style="font-size:0.875rem;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:0.75rem;background:#0a0a0a;color:#fafafa;padding:0.875rem 1.25rem;">Recent Nearby Complaints</p>', unsafe_allow_html=True)
+        st.markdown('<p class="section-label"><span>Recent Nearby Complaints</span></p>', unsafe_allow_html=True)
 
         if len(df_nearby) > 0:
             recent = df_nearby.nlargest(10, 'created_date')[['created_date', 'street_address', 'status', 'distance_miles']].copy()
@@ -283,12 +283,12 @@ if address_input:
         for _, row in street_counts.iterrows():
             rows_html += f'<tr style="border-bottom:1px solid #e5e5e5;"><td style="padding:0.5rem;font-weight:600;">{row["street_name"]}</td><td style="text-align:right;padding:0.5rem;">{row["complaints"]}</td></tr>'
 
-        st.markdown(f'<div class="card"><div class="card-header">Top Streets in Your Area</div><div class="card-body"><table style="width:100%;border-collapse:collapse;font-size:0.875rem;"><tr style="border-bottom:2px solid #171717;"><th style="text-align:left;padding:0.5rem;">Street</th><th style="text-align:right;padding:0.5rem;">Complaints</th></tr>{rows_html}</table></div></div>', unsafe_allow_html=True)
+        st.markdown(f'<div class="card"><div class="card-header">Top Streets in Your Area</div><div class="card-body"><table style="width:100%;border-collapse:collapse;font-size:0.875rem;"><tr style="border-bottom:1px solid #0a0a0a;"><th style="text-align:left;padding:0.5rem;">Street</th><th style="text-align:right;padding:0.5rem;">Complaints</th></tr>{rows_html}</table></div></div>', unsafe_allow_html=True)
 
 else:
     # Show example/instructions when no address entered
     st.markdown('<div class="card"><div class="card-header">How It Works</div><div class="card-body"><ol style="margin:0;padding-left:1.25rem;line-height:1.8;"><li>Enter any Chicago street address above</li><li>We\'ll find all rat complaints within 0.25 miles (about 2-3 blocks)</li><li>See how your block compares to city averages</li><li>Check if there are open cases that haven\'t been addressed</li></ol></div></div>', unsafe_allow_html=True)
 
-    st.markdown('<div style="text-align:center;padding:2rem;color:#525252;"><p style="font-size:1.125rem;margin-bottom:0.5rem;">Try searching:</p><p style="font-family:Space Mono,monospace;">121 N LaSalle St</p><p style="font-family:Space Mono,monospace;">1060 W Addison St</p><p style="font-family:Space Mono,monospace;">233 S Wacker Dr</p></div>', unsafe_allow_html=True)
+    st.markdown('<div style="text-align:center;padding:2rem;color:#525252;"><p style="font-size:1.125rem;margin-bottom:0.5rem;">Try searching:</p><p style="font-family:Inter,sans-serif;">121 N LaSalle St</p><p style="font-family:Inter,sans-serif;">1060 W Addison St</p><p style="font-family:Inter,sans-serif;">233 S Wacker Dr</p></div>', unsafe_allow_html=True)
 
 st.markdown(render_footer(), unsafe_allow_html=True)

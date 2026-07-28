@@ -65,7 +65,7 @@ street_stats = street_stats[street_stats['street_name'].str.strip() != '']
 street_stats = street_stats.sort_values('complaints', ascending=False)
 
 # Top 20 chart
-st.markdown(f'<p style="font-size:0.875rem;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;margin:1rem 0 0.75rem 0;background:#0a0a0a;color:#fafafa;padding:0.875rem 1.25rem;">Top 20 Problem Streets / {filter_label}</p>', unsafe_allow_html=True)
+st.markdown(f'<p class="section-label"><span>Top 20 Problem Streets / {filter_label}</span></p>', unsafe_allow_html=True)
 
 top_20 = street_stats.head(20)
 
@@ -80,13 +80,13 @@ fig = px.bar(
 )
 fig.update_layout(
     height=600,
-    yaxis={'categoryorder': 'total ascending', 'title': None, 'tickfont': {'family': 'Space Mono, monospace', 'size': 11}},
-    xaxis={'title': {'text': 'Number of Complaints', 'font': {'family': 'Space Grotesk, sans-serif', 'size': 12}}, 'tickfont': {'family': 'Space Mono, monospace', 'size': 11}, 'gridcolor': '#e5e5e5'},
+    yaxis={'categoryorder': 'total ascending', 'title': None, 'tickfont': {'family': 'Inter, sans-serif', 'size': 11}},
+    xaxis={'title': {'text': 'Number of Complaints', 'font': {'family': 'Space Grotesk, sans-serif', 'size': 12}}, 'tickfont': {'family': 'Inter, sans-serif', 'size': 11}, 'gridcolor': '#e5e5e5'},
     showlegend=False,
-    font_family="Space Mono, monospace",
+    font_family="Inter, sans-serif",
     paper_bgcolor='rgba(0,0,0,0)',
     plot_bgcolor='rgba(0,0,0,0)',
-    coloraxis_colorbar=dict(title=dict(text="Avg Days", font={'family': 'Space Mono, monospace', 'size': 11}), tickfont={'family': 'Space Mono, monospace', 'size': 10}),
+    coloraxis_colorbar=dict(title=dict(text="Avg Days", font={'family': 'Inter, sans-serif', 'size': 11}), tickfont={'family': 'Inter, sans-serif', 'size': 10}),
     margin={'l': 20, 'r': 20, 't': 20, 'b': 40}
 )
 st.plotly_chart(fig, use_container_width=True)
@@ -101,7 +101,7 @@ worst_count = int(top_20.iloc[0]['complaints']) if len(top_20) > 0 else 0
 st.markdown(f'<div class="card"><div class="card-header">Summary / {filter_label}</div><div class="card-body"><div class="stats-grid-3"><div class="stat-box"><p class="stat-value">{len(street_stats):,}</p><p class="stat-label">Total Streets</p></div><div class="stat-box"><p class="stat-value" style="font-size:1.25rem;">{worst_street}</p><p class="stat-label">Worst Street ({worst_count:,} complaints)</p></div><div class="stat-box"><p class="stat-value">{pct:.0f}%</p><p class="stat-label">Top 20 Streets (of all complaints)</p></div></div></div></div>', unsafe_allow_html=True)
 
 # Data table
-st.markdown(f'<p style="font-size:0.875rem;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;margin:1.5rem 0 0.75rem 0;background:#0a0a0a;color:#fafafa;padding:0.875rem 1.25rem;">All Streets / {filter_label}</p>', unsafe_allow_html=True)
+st.markdown(f'<p class="section-label"><span>All Streets / {filter_label}</span></p>', unsafe_allow_html=True)
 
 display_table = street_stats.head(100).copy()
 display_table.columns = ['Street', 'Complaints', 'Avg Response (Days)', 'Median Response (Days)', 'Completion %']

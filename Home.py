@@ -123,7 +123,7 @@ def main():
             alderman = row['alderman'] if pd.notna(row['alderman']) else "—"
             rows_html += f'<tr style="border-bottom:1px solid #e5e5e5;"><td style="padding:0.5rem;font-weight:600;">{int(row["ward"])}</td><td style="padding:0.5rem;">{alderman}</td><td style="text-align:right;padding:0.5rem;">{row["median_response"]}</td><td style="text-align:center;padding:0.5rem;"><span class="grade-badge grade-{grade.lower()}">{grade}</span></td></tr>'
 
-        return f'<div class="card"><div class="card-header">{header}</div><div class="card-body"><table style="width:100%;border-collapse:collapse;font-size:0.875rem;"><tr style="border-bottom:2px solid #171717;"><th style="text-align:left;padding:0.5rem;">Ward</th><th style="text-align:left;padding:0.5rem;">Alderman</th><th style="text-align:right;padding:0.5rem;">Days</th><th style="text-align:center;padding:0.5rem;">Grade</th></tr>{rows_html}</table></div></div>'
+        return f'<div class="card"><div class="card-header">{header}</div><div class="card-body"><table style="width:100%;border-collapse:collapse;font-size:0.875rem;"><tr style="border-bottom:1px solid #0a0a0a;"><th style="text-align:left;padding:0.5rem;">Ward</th><th style="text-align:left;padding:0.5rem;">Alderman</th><th style="text-align:right;padding:0.5rem;">Days</th><th style="text-align:center;padding:0.5rem;">Grade</th></tr>{rows_html}</table></div></div>'
 
     col_fast, col_slow = st.columns(2)
 
@@ -148,7 +148,7 @@ def main():
     st.markdown(f'''<div class="card"><div class="card-header">Grade Distribution</div><div class="card-body"><div style="display:flex;gap:1rem;flex-wrap:wrap;justify-content:center;">{grade_items}</div></div></div>''', unsafe_allow_html=True)
 
     # === LIVE FEED ===
-    st.markdown('<div style="margin-top:1.5rem;"><p style="font-size:0.875rem;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:0.75rem;display:flex;align-items:center;gap:0.5rem;"><span class="live-dot"></span> Latest Reports</p></div>', unsafe_allow_html=True)
+    st.markdown('<p class="section-label" style="margin-top:2.25rem;"><span>Latest Reports</span><span class="live-dot"></span></p>', unsafe_allow_html=True)
 
     # Get the 8 most recent complaints
     latest_reports = df.nlargest(8, 'created_date')[['created_date', 'ward', 'street_address', 'status']].copy()

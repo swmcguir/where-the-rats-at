@@ -19,7 +19,7 @@ st.markdown(render_page_header(
 ), unsafe_allow_html=True)
 
 # === GRADING METHODOLOGY ===
-st.markdown('<p style="font-size:0.875rem;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;margin:1.5rem 0 0.75rem 0;background:#0a0a0a;color:#fafafa;padding:0.875rem 1.25rem;">How Grades Are Calculated</p>', unsafe_allow_html=True)
+st.markdown('<p class="section-label"><span>How Grades Are Calculated</span></p>', unsafe_allow_html=True)
 
 st.markdown("""
 Each of Chicago's 50 wards is scored on **5 factors** using percentile-based ranking.
@@ -38,9 +38,9 @@ factors = [
 ]
 
 factors_items = ""
-for name, weight, desc, color in factors:
+for i, (name, weight, desc, color) in enumerate(factors, start=1):
     weight_num = int(weight.replace('%', ''))
-    factors_items += f'<div style="display:flex;align-items:center;gap:1rem;padding:0.75rem;background:#fafafa;border-radius:4px;"><div style="min-width:100px;"><span style="font-weight:700;">{name}</span><span style="color:#525252;font-size:0.875rem;"> ({weight})</span></div><div style="flex:1;background:#e5e5e5;height:8px;border-radius:4px;overflow:hidden;"><div style="width:{weight_num * 3}%;background:{color};height:100%;"></div></div><div style="flex:2;font-size:0.875rem;color:#525252;">{desc}</div></div>'
+    factors_items += f'<div style="display:flex;align-items:center;gap:1.25rem;padding:1rem 1.25rem;border:1px solid #e7e7e7;border-radius:8px;background:#ffffff;"><span class="ghost-number">0{i}</span><div style="min-width:100px;"><span style="font-weight:700;">{name}</span><span style="color:#525252;font-size:0.875rem;"> ({weight})</span></div><div style="flex:1;background:#ececec;height:6px;border-radius:999px;overflow:hidden;"><div style="width:{weight_num * 3}%;background:{color};height:100%;"></div></div><div style="flex:2;font-size:0.875rem;color:#525252;">{desc}</div></div>'
 
 st.markdown(f'<div style="display:flex;flex-direction:column;gap:0.75rem;margin:1.5rem 0;">{factors_items}</div>', unsafe_allow_html=True)
 
@@ -55,7 +55,7 @@ st.markdown("""
 """)
 
 # === GRADE THRESHOLDS ===
-st.markdown('<p style="font-size:0.875rem;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;margin:1.5rem 0 0.75rem 0;background:#0a0a0a;color:#fafafa;padding:0.875rem 1.25rem;">Grade Thresholds</p>', unsafe_allow_html=True)
+st.markdown('<p class="section-label"><span>Grade Thresholds</span></p>', unsafe_allow_html=True)
 
 grades = [
     ('A', '80-100', 'Excellent - top performers across all metrics'),
@@ -81,7 +81,7 @@ Final Score = (Speed × 0.30) + (Workload × 0.25) + (Worst Case × 0.20)
 """)
 
 # === WHY THIS APPROACH ===
-st.markdown('<p style="font-size:0.875rem;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;margin:1.5rem 0 0.75rem 0;background:#0a0a0a;color:#fafafa;padding:0.875rem 1.25rem;">Why This Approach?</p>', unsafe_allow_html=True)
+st.markdown('<p class="section-label"><span>Why This Approach?</span></p>', unsafe_allow_html=True)
 
 st.markdown("""
 ### The Problem with Simple Rankings
@@ -105,7 +105,7 @@ By combining 5 metrics with appropriate weights, we create a more holistic pictu
 """)
 
 # === DATA SOURCE ===
-st.markdown('<p style="font-size:0.875rem;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;margin:1.5rem 0 0.75rem 0;background:#0a0a0a;color:#fafafa;padding:0.875rem 1.25rem;">Data Source</p>', unsafe_allow_html=True)
+st.markdown('<p class="section-label"><span>Data Source</span></p>', unsafe_allow_html=True)
 
 st.markdown("""
 All data comes from the **Chicago Data Portal**, the city's official open data platform.
@@ -126,7 +126,7 @@ All data comes from the **Chicago Data Portal**, the city's official open data p
 """)
 
 # === CREDITS ===
-st.markdown('<p style="font-size:0.875rem;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;margin:1.5rem 0 0.75rem 0;background:#0a0a0a;color:#fafafa;padding:0.875rem 1.25rem;">Credits</p>', unsafe_allow_html=True)
+st.markdown('<p class="section-label"><span>Credits</span></p>', unsafe_allow_html=True)
 
 st.markdown("""
 **Created by:** [Sean W. McGuire](https://www.linkedin.com/in/seanwmcguire/)

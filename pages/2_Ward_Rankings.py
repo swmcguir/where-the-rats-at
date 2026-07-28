@@ -34,7 +34,7 @@ ward_metrics = calculate_ward_grades(ward_metrics)
 ward_metrics = ward_metrics.merge(aldermen[['ward', 'alderman']], on='ward', how='left')
 
 # Bar chart header
-st.markdown('<p style="font-size:0.875rem;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;margin:1rem 0 0.75rem 0;background:#0a0a0a;color:#fafafa;padding:0.875rem 1.25rem;">Median Response Time by Ward</p>', unsafe_allow_html=True)
+st.markdown('<p class="section-label"><span>Median Response Time by Ward</span></p>', unsafe_allow_html=True)
 
 grade_order_map = {'A': 0, 'B': 1, 'C': 2, 'D': 3, 'F': 4}
 ward_metrics['grade_order'] = ward_metrics['grade'].map(grade_order_map)
@@ -59,11 +59,11 @@ ward_order = ward_metrics_sorted['ward_label'].tolist()[::-1]
 
 fig.update_layout(
     height=1200,
-    yaxis={'categoryorder': 'array', 'categoryarray': ward_order, 'dtick': 1, 'title': None, 'tickfont': {'family': 'Space Mono, monospace', 'size': 11}},
-    xaxis={'title': {'text': 'Median Response (Days)', 'font': {'family': 'Space Grotesk, sans-serif', 'size': 12}}, 'tickfont': {'family': 'Space Mono, monospace', 'size': 11}, 'gridcolor': '#e5e5e5', 'gridwidth': 1},
+    yaxis={'categoryorder': 'array', 'categoryarray': ward_order, 'dtick': 1, 'title': None, 'tickfont': {'family': 'Inter, sans-serif', 'size': 11}},
+    xaxis={'title': {'text': 'Median Response (Days)', 'font': {'family': 'Space Grotesk, sans-serif', 'size': 12}}, 'tickfont': {'family': 'Inter, sans-serif', 'size': 11}, 'gridcolor': '#e5e5e5', 'gridwidth': 1},
     showlegend=True,
-    legend={'title': {'text': 'Grade', 'font': {'family': 'Space Grotesk, sans-serif', 'size': 12}}, 'font': {'family': 'Space Mono, monospace', 'size': 11}, 'orientation': 'h', 'yanchor': 'bottom', 'y': 1.02, 'xanchor': 'center', 'x': 0.5},
-    font_family="Space Mono, monospace",
+    legend={'title': {'text': 'Grade', 'font': {'family': 'Space Grotesk, sans-serif', 'size': 12}}, 'font': {'family': 'Inter, sans-serif', 'size': 11}, 'orientation': 'h', 'yanchor': 'bottom', 'y': 1.02, 'xanchor': 'center', 'x': 0.5},
+    font_family="Inter, sans-serif",
     paper_bgcolor='rgba(0,0,0,0)',
     plot_bgcolor='rgba(0,0,0,0)',
     margin={'l': 60, 'r': 20, 't': 60, 'b': 40}
@@ -73,7 +73,7 @@ fig.update_traces(marker_line_width=0, opacity=0.9, hovertemplate='<b>%{y}</b><b
 st.plotly_chart(fig, use_container_width=True)
 
 # Data table header
-st.markdown('<p style="font-size:0.875rem;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;margin:1.5rem 0 0.75rem 0;background:#0a0a0a;color:#fafafa;padding:0.875rem 1.25rem;">Full Rankings Table</p>', unsafe_allow_html=True)
+st.markdown('<p class="section-label"><span>Full Rankings Table</span></p>', unsafe_allow_html=True)
 
 display_table = ward_metrics[['rank', 'ward', 'alderman', 'median_response', 'mean_response', 'p90_response', 'total_complaints', 'completion_rate', 'grade']].copy()
 display_table.columns = ['Rank', 'Ward', 'Alderman', 'Median (days)', 'Mean (days)', 'P90 (days)', 'Complaints', 'Completion %', 'Grade']
