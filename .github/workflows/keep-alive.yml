@@ -2,21 +2,21 @@ name: Keep Streamlit app awake
 
 # Streamlit Community Cloud sleeps free-tier apps after ~12 hours without
 # visitors. This visits the app with a real browser and clicks the wake-up
-# button if needed, so nobody ever lands on the sleep screen.
+# control if needed, so nobody ever lands on the sleep screen.
 #
-# NOTE: The schedule is currently disabled because runs were failing - the
-# app does not render at the configured URL. To re-enable:
-#   1. Set a STREAMLIT_APP_URL repository variable to your app's real URL
-#      (Settings > Secrets and variables > Actions > Variables)
-#   2. Restore the schedule trigger below:
-#        schedule:
-#          - cron: "23 */6 * * *"  # every 6 hours (UTC)
+# The cron schedule stays off until a manual/push-triggered run is green.
+# To re-enable, restore:
+#   schedule:
+#     - cron: "23 */6 * * *"  # every 6 hours (UTC)
 #
 # Note: GitHub disables scheduled workflows in repos with no commit activity
 # for 60 days - if that happens, re-enable it from the Actions tab.
 
 on:
   workflow_dispatch: {}
+  # Temporary: run on pushes to the dev branch while debugging the wake flow
+  push:
+    branches: [claude/test-epcrv3]
 
 permissions:
   contents: read
@@ -24,7 +24,7 @@ permissions:
 jobs:
   wake:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
 
