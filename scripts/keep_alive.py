@@ -12,6 +12,7 @@ Run on a schedule (see .github/workflows/keep-alive.yml).
 import os
 import re
 import sys
+import time
 
 from playwright.sync_api import sync_playwright
 
@@ -38,8 +39,25 @@ def dump_diagnostics(page):
         log(f"DIAGNOSTICS: page title: {page.title()!r}", err=True)
         body = re.sub(r"\s+", " ", page.inner_text("body"))[:600]
         log(f"DIAGNOSTICS: body text starts: {body!r}", err=True)
+        for frame in page.frames:
+            log(f"DIAGNOSTICS: frame: {frame.url[:120]}", err=True)
     except Exception as e:
         log(f"DIAGNOSTICS: could not read page: {e}", err=True)
+
+
+def app_shell_visible(page) -> bool:
+    """True if the Streamlit app shell exists in any frame.
+
+    On streamlit.app the woken app renders inside an iframe, so checking
+    only the top-level document misses it.
+    """
+    for frame in page.frames:
+        try:
+            if frame.locator(APP_SHELL).count() > 0:
+                return True
+        except Exception:
+            pass  # frames can detach while booting
+    return False
 
 
 def main() -> int:
@@ -71,13 +89,16 @@ def main() -> int:
         else:
             log("No wake-up control found - app may already be awake.")
 
-        # Wait until the Streamlit app shell actually renders, so the visit
-        # registers as a real session.
-        try:
-            page.wait_for_selector(APP_SHELL, timeout=RENDER_TIMEOUT_MS)
+        # Wait until the Streamlit app shell actually renders (in any frame),
+        # so the visit registers as a real session.
+        deadline = time.monotonic() + RENDER_TIMEOUT_MS / 1000
+        while not app_shell_visible(page) and time.monotonic() < deadline:
+            page.wait_for_timeout(3_000)
+
+        if app_shell_visible(page):
             log("App rendered successfully.")
             status = 0
-        except Exception:
+        else:
             log(f"App did not render within {RENDER_TIMEOUT_MS // 60000} minutes.",
                 err=True)
             dump_diagnostics(page)
